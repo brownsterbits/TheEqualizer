@@ -1,17 +1,22 @@
-//
-//  TheEqualizerApp.swift
-//  TheEqualizer
-//
-//  Created by Chad Brown on 7/24/25.
-//
-
 import SwiftUI
 
 @main
 struct TheEqualizerApp: App {
+    @StateObject private var dataStore = DataStore()
+    @StateObject private var subscriptionManager = SubscriptionManager()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                EventView()
+                    .environmentObject(dataStore)
+                    .environmentObject(subscriptionManager)
+            }
+            .navigationViewStyle(StackNavigationViewStyle())
+            .onAppear {
+                // Sync subscription status with DataStore
+                dataStore.subscriptionManager = subscriptionManager
+            }
         }
     }
 }
