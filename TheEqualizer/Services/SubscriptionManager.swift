@@ -39,9 +39,15 @@ class SubscriptionManager: ObservableObject {
     func loadProducts() async {
         do {
             products = try await Product.products(for: productIds)
-            print("Loaded \(products.count) products")
+            print("DEBUG: Loaded \(products.count) products for IDs: \(productIds)")
+            for product in products {
+                print("DEBUG: Product - ID: \(product.id), Name: \(product.displayName), Price: \(product.displayPrice)")
+            }
+            if products.isEmpty {
+                print("DEBUG: No products loaded! Check App Store Connect configuration for: \(productIds)")
+            }
         } catch {
-            print("Failed to load products: \(error)")
+            print("DEBUG: Failed to load products: \(error)")
         }
     }
     
@@ -56,25 +62,36 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Purchase
     
     func purchase(_ product: Product) async {
+        print("DEBUG: Starting purchase for product: \(product.id)")
         subscriptionStatus = .pending
         
         do {
+            print("DEBUG: Calling product.purchase()...")
             let result = try await product.purchase()
+            print("DEBUG: Purchase result: \(result)")
             
             switch result {
             case .success(let verification):
+                print("DEBUG: Purchase successful, verifying transaction...")
                 let transaction = try checkVerified(verification)
+                print("DEBUG: Transaction verified: \(transaction.productID)")
                 await updateSubscriptionStatus(for: transaction)
                 await transaction.finish()
                 
-            case .userCancelled, .pending:
+            case .userCancelled:
+                print("DEBUG: User cancelled purchase")
                 subscriptionStatus = .notSubscribed
                 
-            default:
+            case .pending:
+                print("DEBUG: Purchase pending")
+                subscriptionStatus = .notSubscribed
+                
+            @unknown default:
+                print("DEBUG: Unknown purchase result")
                 subscriptionStatus = .failed
             }
         } catch {
-            print("Purchase failed: \(error)")
+            print("DEBUG: Purchase failed with error: \(error)")
             subscriptionStatus = .failed
         }
     }
@@ -123,15 +140,23 @@ class SubscriptionManager: ObservableObject {
     }
     
     private func updateSubscriptionStatus(for transaction: StoreKit.Transaction) async {
+        print("DEBUG: Updating subscription status for transaction: \(transaction.productID)")
+        print("DEBUG: Product IDs: \(productIds)")
+        print("DEBUG: Transaction revocation date: \(transaction.revocationDate?.description ?? "none")")
+        
         if productIds.contains(transaction.productID) && transaction.revocationDate == nil {
+            print("DEBUG: Setting user as Pro")
             isProUser = true
             currentSubscription = transaction.productID
             subscriptionStatus = .subscribed
         } else {
+            print("DEBUG: Setting user as Free")
             isProUser = false
             currentSubscription = nil
             subscriptionStatus = .notSubscribed
         }
+        
+        print("DEBUG: Final status - isProUser: \(isProUser), subscriptionStatus: \(subscriptionStatus)")
     }
     
     // MARK: - Verification

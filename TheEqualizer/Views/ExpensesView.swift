@@ -21,10 +21,13 @@ struct ExpensesView: View {
         }
         .listStyle(PlainListStyle())
         .navigationTitle("Expenses")
+        .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(false)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddExpense = true }) {
                     Image(systemName: "plus")
+                        .font(.body)
                 }
             }
         }

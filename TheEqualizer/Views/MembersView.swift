@@ -54,6 +54,7 @@ struct MembersView: View {
         }
         .listStyle(InsetGroupedListStyle())
         .navigationTitle("Members")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddMember = true }) {

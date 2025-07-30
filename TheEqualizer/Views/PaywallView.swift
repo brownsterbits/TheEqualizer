@@ -204,7 +204,7 @@ struct SubscriptionOptionCard: View {
                         }
                     }
                     
-                    Text(product.description ?? "")
+                    Text(product.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

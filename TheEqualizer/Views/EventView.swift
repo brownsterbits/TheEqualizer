@@ -4,9 +4,6 @@ struct EventView: View {
     @EnvironmentObject var dataStore: DataStore
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @State private var showingCreateEvent = false
-    @State private var showingRenameEvent = false
-    @State private var showingDeleteConfirmation = false
-    @State private var showingPaywall = false
     @State private var newEventName = ""
     
     var body: some View {
@@ -45,52 +42,77 @@ struct EventView: View {
             }
         } else {
             // Has event - show normal content
-            ContentView()
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        VStack(spacing: 2) {
-                            Text(dataStore.currentEvent?.name ?? "Event")
-                                .font(.headline)
-                            
-                            if !dataStore.isPro {
-                                Text("Free Plan")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Menu {
-                            Button(action: { 
-                                newEventName = dataStore.currentEvent?.name ?? ""
-                                showingRenameEvent = true 
-                            }) {
-                                Label("Rename Event", systemImage: "pencil")
-                            }
-                            
-                            Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
-                                Label("Delete Event", systemImage: "trash")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                        }
-                    }
+            VStack(spacing: 0) {
+                // Event header bar
+                EventHeaderView()
+                
+                ContentView()
+            }
+        }
+    }
+}
+
+struct EventHeaderView: View {
+    @EnvironmentObject var dataStore: DataStore
+    @EnvironmentObject var subscriptionManager: SubscriptionManager
+    @State private var showingRenameEvent = false
+    @State private var showingDeleteConfirmation = false
+    @State private var newEventName = ""
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(dataStore.currentEvent?.name ?? "Event")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                if !dataStore.isPro {
+                    Text("Free Plan")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
-                .sheet(isPresented: $showingRenameEvent) {
-                    RenameEventView(eventName: $newEventName, isPresented: $showingRenameEvent) {
-                        dataStore.renameCurrentEvent(to: newEventName)
-                    }
+            }
+            
+            Spacer()
+            
+            Menu {
+                Button(action: { 
+                    newEventName = dataStore.currentEvent?.name ?? ""
+                    showingRenameEvent = true 
+                }) {
+                    Label("Rename Event", systemImage: "pencil")
                 }
-                .alert("Delete Event?", isPresented: $showingDeleteConfirmation) {
-                    Button("Cancel", role: .cancel) { }
-                    Button("Delete", role: .destructive) {
-                        dataStore.deleteCurrentEvent()
-                    }
-                } message: {
-                    Text("This will permanently delete all data for this event. Make sure to export your settlement first!")
+                
+                Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                    Label("Delete Event", systemImage: "trash")
                 }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
+        .overlay(
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color(UIColor.separator)),
+            alignment: .bottom
+        )
+        .sheet(isPresented: $showingRenameEvent) {
+            RenameEventView(eventName: $newEventName, isPresented: $showingRenameEvent) {
+                dataStore.renameCurrentEvent(to: newEventName)
+            }
+        }
+        .alert("Delete Event?", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                dataStore.deleteCurrentEvent()
+            }
+        } message: {
+            Text("This will permanently delete all data for this event. Make sure to export your settlement first!")
         }
     }
 }

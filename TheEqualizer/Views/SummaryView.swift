@@ -86,6 +86,7 @@ struct SummaryView: View {
             .padding(.vertical)
         }
         .navigationTitle("Summary")
+        .navigationBarTitleDisplayMode(.large)
         .background(Color(UIColor.systemGroupedBackground))
     }
 }

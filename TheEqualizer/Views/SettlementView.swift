@@ -115,6 +115,7 @@ struct SettlementView: View {
             .padding(.vertical)
         }
         .navigationTitle("Settlement")
+        .navigationBarTitleDisplayMode(.large)
         .background(Color(UIColor.systemGroupedBackground))
         .actionSheet(isPresented: $showingExportOptions) {
             ActionSheet(

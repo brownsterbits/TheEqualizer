@@ -21,6 +21,7 @@ struct DonationsView: View {
         }
         .listStyle(PlainListStyle())
         .navigationTitle("Anonymous Donations")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddDonation = true }) {

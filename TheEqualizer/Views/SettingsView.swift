@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @EnvironmentObject var dataStore: DataStore
     @State private var showingPaywall = false
+    @State private var showingClearDataAlert = false
     
     var body: some View {
         List {
@@ -105,10 +106,72 @@ struct SettingsView: View {
                     }
                 }
             }
+            
+            // Debug Section (temporary)
+            Section("Debug") {
+                Button(action: {
+                    showingClearDataAlert = true
+                }) {
+                    HStack {
+                        Text("Clear All Data")
+                        Spacer()
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                }
+                .foregroundColor(.red)
+                
+                Button(action: {
+                    dataStore.resetToFreeUser()
+                }) {
+                    HStack {
+                        Text("Reset to Free User (Keep Data)")
+                        Spacer()
+                        Image(systemName: "person.badge.minus")
+                            .foregroundColor(.orange)
+                    }
+                }
+                .foregroundColor(.orange)
+                
+                Button(action: {
+                    // Debug: manually toggle Pro status to test sync
+                    subscriptionManager.isProUser.toggle()
+                    print("DEBUG: Manually toggled Pro status to: \(subscriptionManager.isProUser)")
+                }) {
+                    HStack {
+                        Text("Debug: Toggle Pro Status")
+                        Spacer()
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(.yellow)
+                    }
+                }
+                .foregroundColor(.blue)
+                
+                Button(action: {
+                    dataStore.printDiagnostics()
+                }) {
+                    HStack {
+                        Text("Debug: Print Diagnostics")
+                        Spacer()
+                        Image(systemName: "stethoscope")
+                            .foregroundColor(.green)
+                    }
+                }
+                .foregroundColor(.green)
+            }
         }
         .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
+        }
+        .alert("Delete All Data?", isPresented: $showingClearDataAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete Everything", role: .destructive) {
+                dataStore.clearAllData()
+            }
+        } message: {
+            Text("This will permanently delete ALL events, expenses, members, and donations. This action cannot be undone.\n\nAre you absolutely sure?")
         }
     }
 }
