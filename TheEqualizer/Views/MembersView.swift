@@ -43,6 +43,13 @@ struct MembersView: View {
                                 .foregroundColor(.orange)
                             Text(member.name)
                             Spacer()
+                            Text("Reimbursement Only")
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.2))
+                                .foregroundColor(.orange)
+                                .cornerRadius(4)
                         }
                         .padding(.vertical, 4)
                     }

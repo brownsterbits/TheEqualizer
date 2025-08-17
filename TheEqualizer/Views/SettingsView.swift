@@ -63,7 +63,7 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                Link(destination: URL(string: "https://yourdomain.com/privacy")!) {
+                Link(destination: URL(string: "https://chadmbrown.github.io/the-equalizer-legal/privacy.html")!) {
                     HStack {
                         Text("Privacy Policy")
                         Spacer()
@@ -72,7 +72,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                Link(destination: URL(string: "https://yourdomain.com/terms")!) {
+                Link(destination: URL(string: "https://chadmbrown.github.io/the-equalizer-legal/terms.html")!) {
                     HStack {
                         Text("Terms of Service")
                         Spacer()

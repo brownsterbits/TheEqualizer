@@ -98,7 +98,7 @@ struct ExpenseRowView: View {
             // Contributors
             if !expense.contributors.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Contributors:")
+                    Text("Direct Donations:")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.secondary)
@@ -129,7 +129,7 @@ struct ExpenseRowView: View {
                 Button(action: { showingAddContributor = true }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                        Text("Add Contributor")
+                        Text("Add Direct Donation")
                     }
                     .font(.caption)
                     .foregroundColor(.blue)
@@ -162,32 +162,40 @@ struct AddExpenseView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Expense Details")) {
-                    TextField("Description", text: $description)
-                    
-                    HStack {
-                        Text("$")
-                        TextField("Amount", text: $amount)
-                            .keyboardType(.decimalPad)
+                if allMembers.isEmpty {
+                    Section {
+                        Text("Please add members before adding expenses")
+                            .foregroundColor(.orange)
+                            .font(.callout)
                     }
-                    
-                    Picker("Paid By", selection: $selectedMember) {
-                        Text("Select Member").tag("")
-                        ForEach(allMembers, id: \.self) { member in
-                            Text(member).tag(member)
+                } else {
+                    Section(header: Text("Expense Details")) {
+                        TextField("Description", text: $description)
+                        
+                        HStack {
+                            Text("$")
+                            TextField("Amount", text: $amount)
+                                .keyboardType(.decimalPad)
                         }
+                        
+                        Picker("Paid By", selection: $selectedMember) {
+                            Text("Select Member").tag("")
+                            ForEach(allMembers, id: \.self) { member in
+                                Text(member).tag(member)
+                            }
+                        }
+                        
+                        TextField("Notes (optional)", text: $notes)
                     }
                     
-                    TextField("Notes (optional)", text: $notes)
-                }
-                
-                Section {
-                    Toggle("Non-reimbursable expense", isOn: $optOut)
-                    
-                    if optOut {
-                        Text("This expense won't be included in reimbursements")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    Section {
+                        Toggle("Non-reimbursable expense", isOn: $optOut)
+                        
+                        if optOut {
+                            Text("This expense won't be included in reimbursements")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
             }
@@ -210,6 +218,13 @@ struct AddExpenseView: View {
     }
     
     private func saveExpense() {
+        // Check if there are members first
+        guard !allMembers.isEmpty else {
+            alertMessage = "Please add members before adding expenses"
+            showingAlert = true
+            return
+        }
+        
         guard !description.isEmpty else {
             alertMessage = "Please enter a description"
             showingAlert = true
@@ -228,6 +243,7 @@ struct AddExpenseView: View {
             return
         }
         
+        // Add the expense
         dataStore.addExpense(
             description: description,
             amount: amountValue,
@@ -236,7 +252,10 @@ struct AddExpenseView: View {
             optOut: optOut
         )
         
-        presentationMode.wrappedValue.dismiss()
+        // Dismiss after a small delay to prevent UI hang
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            presentationMode.wrappedValue.dismiss()
+        }
     }
 }
 
@@ -263,7 +282,7 @@ struct AddContributorView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Add Contributor")) {
+                Section(header: Text("Direct Donation Details")) {
                     Picker("Contributing Member", selection: $selectedMember) {
                         Text("Select Member").tag("")
                         ForEach(availableMembers, id: \.self) { member in
@@ -281,8 +300,14 @@ struct AddContributorView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                
+                Section {
+                    Text("Money given directly by one member to another to help split expenses")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
-            .navigationTitle("Add Contributor")
+            .navigationTitle("Add Direct Donation")
             .navigationBarItems(
                 leading: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
@@ -319,7 +344,12 @@ struct AddContributorView: View {
             return
         }
         
+        // Add the contributor
         dataStore.addContributor(to: expense, name: selectedMember, amount: amountValue)
-        presentationMode.wrappedValue.dismiss()
+        
+        // Dismiss after a small delay to prevent UI hang
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            presentationMode.wrappedValue.dismiss()
+        }
     }
 }

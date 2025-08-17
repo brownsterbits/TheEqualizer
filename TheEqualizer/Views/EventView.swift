@@ -3,42 +3,107 @@ import SwiftUI
 struct EventView: View {
     @EnvironmentObject var dataStore: DataStore
     @EnvironmentObject var subscriptionManager: SubscriptionManager
+    @EnvironmentObject var firebaseService: FirebaseService
     @State private var showingCreateEvent = false
+    @State private var showingAuthSheet = false
+    @State private var showingPaywall = false
     @State private var newEventName = ""
     
     var body: some View {
         if dataStore.currentEvent == nil {
-            // No event - show create button
-            VStack(spacing: 20) {
-                Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 60))
-                    .foregroundColor(.purple)
+            // No event - show improved onboarding
+            VStack(spacing: 30) {
+                // Header
+                VStack(spacing: 16) {
+                    Image(systemName: "equal.square.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.purple)
+                    
+                    Text("Welcome to The Equalizer")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("Split expenses fairly among groups")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 
-                Text("No Event Yet")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("Create your first event to start tracking expenses")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal)
-                
-                Button(action: { showingCreateEvent = true }) {
-                    Text("Create Event")
+                // Action buttons
+                VStack(spacing: 16) {
+                    Button(action: { showingCreateEvent = true }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Create Your First Event")
+                        }
                         .fontWeight(.semibold)
-                        .frame(minWidth: 200)
+                        .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.purple)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: { showingAuthSheet = true }) {
+                        HStack {
+                            Image(systemName: "person.circle.fill")
+                            Text("Sign In to Sync Existing Events")
+                        }
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: { 
+                        Task {
+                            await subscriptionManager.restorePurchases()
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise.circle.fill")
+                            Text("Restore Pro Subscription")
+                        }
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green.opacity(0.1))
+                        .foregroundColor(.green)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: { showingPaywall = true }) {
+                        HStack {
+                            Image(systemName: "star.circle.fill")
+                            Text("See Pro Features")
+                        }
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange.opacity(0.1))
+                        .foregroundColor(.orange)
+                        .cornerRadius(12)
+                    }
                 }
+                .padding(.horizontal)
+                
+                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
             .sheet(isPresented: $showingCreateEvent) {
                 CreateEventView(eventName: $newEventName, isPresented: $showingCreateEvent) {
                     dataStore.createEvent(name: newEventName)
                     newEventName = ""
                 }
+            }
+            .sheet(isPresented: $showingAuthSheet) {
+                AuthenticationView()
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
         } else {
             // Has event - show normal content

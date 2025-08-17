@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6FE98CB72E347A550097F0F8 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FE98CB62E347A550097F0F8 /* StoreKit.framework */; };
+		6FE98CDC2E3B1D750097F0F8 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 6FE98CDB2E3B1D750097F0F8 /* FirebaseAuth */; };
+		6FE98CDE2E3B1D750097F0F8 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 6FE98CDD2E3B1D750097F0F8 /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		6FE98C512E33278B0097F0F8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +33,7 @@
 		6FE98C432E33278A0097F0F8 /* TheEqualizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TheEqualizer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FE98C502E33278B0097F0F8 /* TheEqualizerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TheEqualizerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FE98C5A2E33278B0097F0F8 /* TheEqualizerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TheEqualizerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6FE98CB62E347A550097F0F8 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +59,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6FE98CB72E347A550097F0F8 /* StoreKit.framework in Frameworks */,
+				6FE98CDC2E3B1D750097F0F8 /* FirebaseAuth in Frameworks */,
+				6FE98CDE2E3B1D750097F0F8 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +88,7 @@
 				6FE98C452E33278A0097F0F8 /* TheEqualizer */,
 				6FE98C532E33278B0097F0F8 /* TheEqualizerTests */,
 				6FE98C5D2E33278B0097F0F8 /* TheEqualizerUITests */,
+				6FE98CB52E347A550097F0F8 /* Frameworks */,
 				6FE98C442E33278A0097F0F8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +101,14 @@
 				6FE98C5A2E33278B0097F0F8 /* TheEqualizerUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6FE98CB52E347A550097F0F8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				6FE98CB62E347A550097F0F8 /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +131,8 @@
 			);
 			name = TheEqualizer;
 			packageProductDependencies = (
+				6FE98CDB2E3B1D750097F0F8 /* FirebaseAuth */,
+				6FE98CDD2E3B1D750097F0F8 /* FirebaseFirestore */,
 			);
 			productName = TheEqualizer;
 			productReference = 6FE98C432E33278A0097F0F8 /* TheEqualizer.app */;
@@ -175,6 +196,7 @@
 				TargetAttributes = {
 					6FE98C422E33278A0097F0F8 = {
 						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
 					};
 					6FE98C4F2E33278B0097F0F8 = {
 						CreatedOnToolsVersion = 16.4;
@@ -195,6 +217,9 @@
 			);
 			mainGroup = 6FE98C3A2E33278A0097F0F8;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6FE98CDA2E3B1D750097F0F8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6FE98C442E33278A0097F0F8 /* Products */;
 			projectDirPath = "";
@@ -395,16 +420,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TheEqualizer/TheEqualizer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 959KDL6FWJ;
+				DEVELOPMENT_TEAM = 6VM5W2W65K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Equalizer;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -413,6 +443,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.brownster.TheEqualizer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -423,16 +454,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TheEqualizer/TheEqualizer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 959KDL6FWJ;
+				DEVELOPMENT_TEAM = 6VM5W2W65K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Equalizer;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -558,6 +594,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6FE98CDA2E3B1D750097F0F8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6FE98CDB2E3B1D750097F0F8 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6FE98CDA2E3B1D750097F0F8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		6FE98CDD2E3B1D750097F0F8 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6FE98CDA2E3B1D750097F0F8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6FE98C3B2E33278A0097F0F8 /* Project object */;
 }

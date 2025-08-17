@@ -26,21 +26,46 @@ struct SummaryView: View {
                     
                     HStack(spacing: 16) {
                         SummaryCard(
-                            title: "Donations",
+                            title: "Treasury Donations",
                             amount: dataStore.totalDonations,
                             color: .green,
                             icon: "gift.fill"
                         )
                         
                         SummaryCard(
-                            title: "Direct Contributions",
+                            title: "Direct Donations",
                             amount: dataStore.directContributions,
                             color: .orange,
-                            icon: "person.2.fill"
+                            icon: "person.2.fill",
+                            showInfo: true,
+                            infoText: "Money given directly by one member to another to help split expenses"
                         )
                     }
                 }
                 .padding(.horizontal)
+                
+                // Treasury/Unassigned Funds
+                if dataStore.totalDonations > 0 {
+                    VStack(spacing: 8) {
+                        Text("Treasury Balance")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("$\(dataStore.totalDonations, specifier: "%.2f")")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                        
+                        Text("Used to reduce contributor reimbursements")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
                 
                 // Member Balances
                 if !dataStore.members.isEmpty {
@@ -96,6 +121,19 @@ struct SummaryCard: View {
     let amount: Double
     let color: Color
     let icon: String
+    let showInfo: Bool
+    let infoText: String
+    
+    @State private var showingInfoAlert = false
+    
+    init(title: String, amount: Double, color: Color, icon: String, showInfo: Bool = false, infoText: String = "") {
+        self.title = title
+        self.amount = amount
+        self.color = color
+        self.icon = icon
+        self.showInfo = showInfo
+        self.infoText = infoText
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -104,6 +142,14 @@ struct SummaryCard: View {
                     .foregroundColor(color)
                     .imageScale(.large)
                 Spacer()
+                
+                if showInfo {
+                    Button(action: { showingInfoAlert = true }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.secondary)
+                            .imageScale(.small)
+                    }
+                }
             }
             
             Text(title)
@@ -119,6 +165,11 @@ struct SummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
+        .alert("Information", isPresented: $showingInfoAlert) {
+            Button("OK") { }
+        } message: {
+            Text(infoText)
+        }
     }
 }
 

@@ -41,10 +41,12 @@ struct Expense: Identifiable, Codable, Equatable {
     }
     
     var totalContributions: Double {
-        contributors.reduce(0) { $0 + $1.amount }
+        let result = contributors.reduce(0) { $0 + $1.amount }
+        return result.isFinite ? result : 0
     }
     
     var remainingAmount: Double {
-        amount - totalContributions
+        let result = amount - totalContributions
+        return result.isFinite ? max(0, result) : 0  // Also ensure non-negative
     }
 }

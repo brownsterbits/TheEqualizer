@@ -20,7 +20,7 @@ struct DonationsView: View {
             }
         }
         .listStyle(PlainListStyle())
-        .navigationTitle("Anonymous Donations")
+        .navigationTitle("Treasury Donations")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -47,7 +47,7 @@ struct DonationRowView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Anonymous Donation")
+                Text("Treasury Donation")
                     .font(.headline)
                 
                 if !donation.notes.isEmpty {
@@ -100,7 +100,7 @@ struct AddDonationView: View {
                 }
                 
                 Section {
-                    Text("Anonymous donations help reduce the amount each contributing member needs to pay")
+                    Text("Treasury donations help reduce the amount each contributing member needs to pay")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -130,7 +130,12 @@ struct AddDonationView: View {
             return
         }
         
+        // Add the donation
         dataStore.addDonation(amount: amountValue, notes: notes)
-        presentationMode.wrappedValue.dismiss()
+        
+        // Dismiss after a small delay to prevent UI hang
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            presentationMode.wrappedValue.dismiss()
+        }
     }
 }

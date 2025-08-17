@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Events can be read/written by creator or collaborators
+    match /events/{eventId} {
+      allow read: if request.auth != null && 
+        (resource.data.createdBy == request.auth.uid || 
+         resource.data.collaborators[request.auth.uid] == true);
+      
+      allow create: if request.auth != null && 
+        request.resource.data.createdBy == request.auth.uid;
+      
+      allow update, delete: if request.auth != null && 
+        (resource.data.createdBy == request.auth.uid || 
+         resource.data.collaborators[request.auth.uid] == true);
+    }
+    
+    // Subcollections inherit parent permissions (fixed to capture eventId)
+    match /events/{eventId}/{document=**} {
+      allow read, write: if request.auth != null && 
+        (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid || 
+         get(/databases/$(database)/documents/events/$(eventId)).data.collaborators[request.auth.uid] == true);
+    }
+    
+    // Invite codes mapping (anyone can read to join)
+    match /invites/{inviteCode} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

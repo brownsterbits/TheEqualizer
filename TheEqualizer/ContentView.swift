@@ -45,7 +45,7 @@ struct ContentView: View {
             }
             .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
-                Label("Donations", systemImage: "gift.fill")
+                Label("Treasury", systemImage: "gift.fill")
             }
             .tag(subscriptionManager.isProUser ? 3 : 2)
             

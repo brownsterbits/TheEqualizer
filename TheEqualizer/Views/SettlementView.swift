@@ -153,8 +153,8 @@ struct SettlementView: View {
         text += "SUMMARY\n"
         text += "Total Expenses: $\(String(format: "%.2f", dataStore.totalExpenses))\n"
         text += "Reimbursable Expenses: $\(String(format: "%.2f", dataStore.reimbursableExpenses))\n"
-        text += "Total Donations: $\(String(format: "%.2f", dataStore.totalDonations))\n"
-        text += "Direct Contributions: $\(String(format: "%.2f", dataStore.directContributions))\n"
+        text += "Treasury Donations: $\(String(format: "%.2f", dataStore.totalDonations))\n"
+        text += "Direct Donations: $\(String(format: "%.2f", dataStore.directContributions))\n"
         text += "Share per Contributing Member: $\(String(format: "%.2f", dataStore.sharePerPerson))\n\n"
         
         if !settlements.toContribute.isEmpty {

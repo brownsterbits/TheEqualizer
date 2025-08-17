@@ -1,14 +1,18 @@
 import SwiftUI
-import CloudKit
 
 struct EventsListView: View {
     @EnvironmentObject var dataStore: DataStore
+    @EnvironmentObject var firebaseService: FirebaseService
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @State private var showingCreateEvent = false
     @State private var showingDeleteAlert = false
     @State private var eventToDelete: Event?
     @State private var newEventName = ""
     @State private var showingPaywall = false
+    @State private var showingAuthSheet = false
+    @State private var showingInviteSheet = false
+    @State private var selectedEventForInvite: Event?
+    @State private var showingJoinSheet = false
     
     var body: some View {
         List {
@@ -27,6 +31,30 @@ struct EventsListView: View {
                                 Spacer()
                             }
                         }
+                        
+                        Button(action: { showingAuthSheet = true }) {
+                            HStack {
+                                Image(systemName: "person.circle.fill")
+                                    .foregroundColor(.blue)
+                                Text("Sign In to Sync Existing Events")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                        }
+                        
+                        Button(action: { 
+                            Task {
+                                await subscriptionManager.restorePurchases()
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.clockwise.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Restore Pro Subscription")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                        }
                     }
                 }
                 
@@ -37,7 +65,7 @@ struct EventsListView: View {
                             .font(.headline)
                             .foregroundColor(.purple)
                         
-                        Text("Create unlimited events and sync across devices with CloudKit")
+                        Text("Create unlimited events and sync across devices with Firebase")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
@@ -57,29 +85,31 @@ struct EventsListView: View {
                             event: event,
                             isCurrent: dataStore.currentEvent?.id == event.id
                         )
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                eventToDelete = event
-                                showingDeleteAlert = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
                         .swipeActions(edge: .leading) {
-                            if !event.isShared && dataStore.isCloudKitEnabled {
+                            if dataStore.isFirebaseConnected {
                                 Button {
-                                    Task {
-                                        if let share = await dataStore.shareEvent(event) {
-                                            // Present share sheet
-                                            await MainActor.run {
-                                                presentShareSheet(share: share)
-                                            }
+                                    if !firebaseService.isAuthenticated {
+                                        showingAuthSheet = true
+                                    } else {
+                                        // Set the selected event first
+                                        selectedEventForInvite = event
+                                        // Small delay to ensure state is set
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            showingInviteSheet = true
                                         }
                                     }
                                 } label: {
                                     Label("Share", systemImage: "person.badge.plus")
                                 }
                                 .tint(.blue)
+                            }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                eventToDelete = event
+                                showingDeleteAlert = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                         .onTapGesture {
@@ -96,45 +126,87 @@ struct EventsListView: View {
                             Spacer()
                         }
                     }
-                }
-                
-                // CloudKit status and sharing instructions
-                if dataStore.isCloudKitEnabled {
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Image(systemName: "icloud.fill")
-                                    .foregroundColor(.blue)
-                                Text("Syncing with iCloud")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                            
-                            HStack {
-                                Image(systemName: "person.badge.plus")
-                                    .foregroundColor(.purple)
-                                Text("Swipe left on any event to share with others")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
+                    
+                    Button(action: { 
+                        if firebaseService.isAuthenticated {
+                            showingJoinSheet = true
+                        } else {
+                            showingAuthSheet = true
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .foregroundColor(.blue)
+                            Text("Join Event with Code")
+                                .foregroundColor(.primary)
+                            Spacer()
                         }
                     }
-                } else if subscriptionManager.isProUser {
+                }
+                
+                // Sharing instructions for Pro users with events
+                if subscriptionManager.isProUser && !dataStore.events.isEmpty {
                     Section {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Image(systemName: "icloud.slash")
-                                    .foregroundColor(.orange)
-                                Text("iCloud Sync Unavailable")
+                                Image(systemName: "person.badge.plus")
+                                    .foregroundColor(.purple)
+                                Text("How to Share Events")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .fontWeight(.semibold)
+                                Spacer()
                             }
                             
-                            Text("Check your iCloud settings to enable sync and collaboration")
+                            Text("• Swipe right on any event to share with others")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
+                            
+                            Text("• Share the 6-character code with others")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Text("• They can join using 'Join Event with Code'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
+                // Firebase sync status
+                if subscriptionManager.isProUser {
+                    Section {
+                        if dataStore.isFirebaseConnected {
+                            HStack {
+                                Image(systemName: dataStore.isSyncing ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill")
+                                    .foregroundColor(dataStore.isSyncing ? .orange : .green)
+                                Text(dataStore.isSyncing ? "Syncing..." : "Synced with Firebase")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Image(systemName: "wifi.slash")
+                                        .foregroundColor(.orange)
+                                    Text("Not Connected")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Button("Sign In to Sync") {
+                                    showingAuthSheet = true
+                                }
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+                            }
+                        }
+                        
+                        if let error = dataStore.syncError {
+                            Text("Sync Error: \(error)")
+                                .font(.caption2)
+                                .foregroundColor(.red)
                         }
                     }
                 }
@@ -154,6 +226,29 @@ struct EventsListView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
         }
+        .sheet(isPresented: $showingAuthSheet) {
+            AuthenticationView()
+        }
+        .sheet(isPresented: $showingInviteSheet) {
+            if let event = selectedEventForInvite {
+                InviteShareView(event: event)
+                    .environmentObject(dataStore)
+                    .environmentObject(firebaseService)
+                    .environmentObject(subscriptionManager)
+            } else {
+                // Debug: Show error if event is nil
+                VStack {
+                    Text("Error: No event selected")
+                        .foregroundColor(.red)
+                    Button("Close") {
+                        showingInviteSheet = false
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingJoinSheet) {
+            JoinEventView()
+        }
         .alert("Delete Event", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) {
                 eventToDelete = nil
@@ -169,36 +264,6 @@ struct EventsListView: View {
                 Text("Are you sure you want to delete '\(event.name)'? This action cannot be undone.")
             }
         }
-    }
-    
-    private func presentShareSheet(share: CKShare) {
-        let controller = CloudSharingController(share: share, container: CKContainer.default())
-        controller.modalPresentationStyle = .formSheet
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController {
-            rootViewController.present(controller, animated: true)
-        }
-    }
-}
-
-// MARK: - CloudKit Sharing Support
-
-class CloudSharingController: UICloudSharingController {
-    override init(share: CKShare, container: CKContainer) {
-        super.init(share: share, container: container)
-        delegate = self
-    }
-}
-
-extension CloudSharingController: UICloudSharingControllerDelegate {
-    func cloudSharingController(_ controller: UICloudSharingController, failedToSaveShareWithError error: Error) {
-        print("Failed to save share: \(error)")
-    }
-    
-    func itemTitle(for controller: UICloudSharingController) -> String? {
-        return "Event Collaboration"
     }
 }
 
@@ -228,7 +293,7 @@ struct EventRowView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                if event.isShared {
+                if event.inviteCode != nil {
                     HStack {
                         Image(systemName: "person.2.fill")
                             .font(.caption2)
@@ -258,7 +323,7 @@ struct EventRowView: View {
                 }
                 
                 // Show share status
-                if event.isShared {
+                if event.inviteCode != nil {
                     HStack(spacing: 4) {
                         Image(systemName: "person.2.fill")
                             .font(.caption2)
