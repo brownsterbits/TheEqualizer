@@ -133,15 +133,14 @@ struct JoinEventView: View {
         isJoining = true
         
         Task {
-            await dataStore.handleInviteCode(inviteCode)
+            let success = await dataStore.handleInviteCode(inviteCode)
             
             await MainActor.run {
                 isJoining = false
-                // Check if we successfully joined by seeing if we have more events
-                if dataStore.events.count > 0 {
+                if success {
                     showingSuccess = true
                 } else {
-                    errorMessage = "Invalid invite code or unable to join event. Please check the code and try again."
+                    errorMessage = dataStore.syncError ?? "Invalid invite code or unable to join event. Please check the code and try again."
                     showingError = true
                 }
             }

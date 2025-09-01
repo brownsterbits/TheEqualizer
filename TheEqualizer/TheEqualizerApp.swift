@@ -17,7 +17,7 @@ struct TheEqualizerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            EventView()
+            MainTabView()
                 .environmentObject(dataStore)
                 .environmentObject(dataStore.firebaseService)
                 .environmentObject(subscriptionManager)

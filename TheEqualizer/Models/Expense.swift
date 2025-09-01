@@ -3,9 +3,9 @@ import Foundation
 struct Contributor: Identifiable, Codable, Equatable {
     let id: UUID
     let name: String
-    let amount: Double
+    let amount: Decimal
     
-    init(id: UUID = UUID(), name: String, amount: Double) {
+    init(id: UUID = UUID(), name: String, amount: Decimal) {
         self.id = id
         self.name = name
         self.amount = amount
@@ -15,7 +15,7 @@ struct Contributor: Identifiable, Codable, Equatable {
 struct Expense: Identifiable, Codable, Equatable {
     let id: UUID
     var description: String
-    var amount: Double
+    var amount: Decimal
     var paidBy: String
     var notes: String
     var optOut: Bool
@@ -24,7 +24,7 @@ struct Expense: Identifiable, Codable, Equatable {
     
     init(id: UUID = UUID(), 
          description: String, 
-         amount: Double, 
+         amount: Decimal, 
          paidBy: String, 
          notes: String = "", 
          optOut: Bool = false, 
@@ -40,13 +40,12 @@ struct Expense: Identifiable, Codable, Equatable {
         self.date = date
     }
     
-    var totalContributions: Double {
-        let result = contributors.reduce(0) { $0 + $1.amount }
-        return result.isFinite ? result : 0
+    var totalContributions: Decimal {
+        return contributors.reduce(0) { $0 + $1.amount }
     }
     
-    var remainingAmount: Double {
+    var remainingAmount: Decimal {
         let result = amount - totalContributions
-        return result.isFinite ? max(0, result) : 0  // Also ensure non-negative
+        return max(0, result)  // Ensure non-negative
     }
 }

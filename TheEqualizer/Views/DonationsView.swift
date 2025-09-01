@@ -20,6 +20,9 @@ struct DonationsView: View {
             }
         }
         .listStyle(PlainListStyle())
+        .refreshable {
+            await dataStore.refreshCurrentEvent()
+        }
         .navigationTitle("Treasury Donations")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -68,7 +71,7 @@ struct DonationRowView: View {
             
             Spacer()
             
-            Text("$\(donation.amount, specifier: "%.2f")")
+            Text("$\(donation.amount.formatted())")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.green)
@@ -124,7 +127,7 @@ struct AddDonationView: View {
     }
     
     private func saveDonation() {
-        guard let amountValue = Double(amount), amountValue > 0 else {
+        guard let amountValue = Decimal(string: amount), amountValue > 0 else {
             alertMessage = "Please enter a valid amount"
             showingAlert = true
             return

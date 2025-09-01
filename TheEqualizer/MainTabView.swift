@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct MainTabView: View {
     @EnvironmentObject var dataStore: DataStore
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @State private var selectedTab = 0
@@ -82,7 +82,9 @@ struct ContentView: View {
         .id("TabView-\(refreshID)")
         .onChange(of: subscriptionManager.isProUser) { oldValue, newValue in
             // Reset to appropriate first tab when subscription status changes
-            selectedTab = newValue ? 0 : 0 // Events tab for Pro, Members tab for Free
+            // For Pro users: tab 0 is Events
+            // For Free users: tab 0 is Members (Events tab doesn't exist)
+            selectedTab = 0
             // Force refresh of navigation views
             refreshID = UUID()
         }
@@ -104,8 +106,8 @@ struct ContentView: View {
             print("DEBUG: Forcing UI refresh due to data reset")
             refreshID = UUID()
             
-            // Reset to appropriate first tab
-            selectedTab = subscriptionManager.isProUser ? 0 : 0
+            // Reset to first tab
+            selectedTab = 0
         }
     }
 }

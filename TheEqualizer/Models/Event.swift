@@ -39,37 +39,31 @@ struct Event: Identifiable, Codable, Equatable {
         members.filter { $0.type == .reimbursementOnly }
     }
     
-    var totalExpenses: Double {
-        let result = expenses.reduce(0) { $0 + $1.amount }
-        return result.isFinite ? result : 0
+    var totalExpenses: Decimal {
+        return expenses.reduce(0) { $0 + $1.amount }
     }
     
-    var reimbursableExpenses: Double {
-        let result = expenses.filter { !$0.optOut }.reduce(0) { $0 + $1.amount }
-        return result.isFinite ? result : 0
+    var reimbursableExpenses: Decimal {
+        return expenses.filter { !$0.optOut }.reduce(0) { $0 + $1.amount }
     }
     
-    var totalDonations: Double {
-        let result = donations.reduce(0) { $0 + $1.amount }
-        return result.isFinite ? result : 0
+    var totalDonations: Decimal {
+        return donations.reduce(0) { $0 + $1.amount }
     }
     
-    var directContributions: Double {
-        let result = expenses.reduce(0) { sum, expense in
+    var directContributions: Decimal {
+        return expenses.reduce(0) { sum, expense in
             sum + expense.contributors.reduce(0) { $0 + $1.amount }
         }
-        return result.isFinite ? result : 0
     }
     
-    var amountToShare: Double {
-        let result = reimbursableExpenses - totalDonations
-        return result.isFinite ? result : 0
+    var amountToShare: Decimal {
+        return reimbursableExpenses - totalDonations
     }
     
-    var sharePerPerson: Double {
+    var sharePerPerson: Decimal {
         let count = contributingMembers.count
-        guard count > 0, amountToShare.isFinite else { return 0 }
-        let result = amountToShare / Double(count)
-        return result.isFinite ? result : 0
+        guard count > 0 else { return 0 }
+        return amountToShare / Decimal(count)
     }
 }

@@ -55,6 +55,23 @@ struct EventsListView: View {
                                 Spacer()
                             }
                         }
+                        
+                        // Allow non-Pro users to join shared events
+                        Button(action: { 
+                            if firebaseService.isAuthenticated {
+                                showingJoinSheet = true
+                            } else {
+                                showingAuthSheet = true
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .foregroundColor(.blue)
+                                Text("Join Shared Event")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                        }
                     }
                 }
                 
@@ -91,12 +108,13 @@ struct EventsListView: View {
                                     if !firebaseService.isAuthenticated {
                                         showingAuthSheet = true
                                     } else {
-                                        // Set the selected event first
-                                        selectedEventForInvite = event
-                                        // Small delay to ensure state is set
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            showingInviteSheet = true
+                                        // Ensure currentEvent is set if needed
+                                        if dataStore.currentEvent?.id != event.id {
+                                            dataStore.selectEvent(event)
                                         }
+                                        // Set the selected event and show sheet immediately
+                                        selectedEventForInvite = event
+                                        showingInviteSheet = true
                                     }
                                 } label: {
                                     Label("Share", systemImage: "person.badge.plus")
@@ -229,19 +247,30 @@ struct EventsListView: View {
         .sheet(isPresented: $showingAuthSheet) {
             AuthenticationView()
         }
-        .sheet(isPresented: $showingInviteSheet) {
+        .sheet(isPresented: $showingInviteSheet, onDismiss: {
+            // Clear the selected event after sheet dismisses
+            selectedEventForInvite = nil
+        }) {
             if let event = selectedEventForInvite {
                 InviteShareView(event: event)
                     .environmentObject(dataStore)
                     .environmentObject(firebaseService)
                     .environmentObject(subscriptionManager)
             } else {
-                // Debug: Show error if event is nil
-                VStack {
-                    Text("Error: No event selected")
-                        .foregroundColor(.red)
-                    Button("Close") {
-                        showingInviteSheet = false
+                // Fallback: If no event selected, try to use current event
+                if let currentEvent = dataStore.currentEvent {
+                    InviteShareView(event: currentEvent)
+                        .environmentObject(dataStore)
+                        .environmentObject(firebaseService)
+                        .environmentObject(subscriptionManager)
+                } else {
+                    // Show error if no event available
+                    VStack {
+                        Text("Error: No event selected")
+                            .foregroundColor(.red)
+                        Button("Close") {
+                            showingInviteSheet = false
+                        }
                     }
                 }
             }
@@ -316,7 +345,7 @@ struct EventRowView: View {
                     .foregroundColor(.secondary)
                 
                 if event.totalExpenses > 0 {
-                    Text("$\(event.totalExpenses, specifier: "%.2f")")
+                    Text("$\(event.totalExpenses.formatted())")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.purple)

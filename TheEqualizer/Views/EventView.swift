@@ -7,6 +7,7 @@ struct EventView: View {
     @State private var showingCreateEvent = false
     @State private var showingAuthSheet = false
     @State private var showingPaywall = false
+    @State private var showingJoinEvent = false
     @State private var newEventName = ""
     
     var body: some View {
@@ -42,6 +43,28 @@ struct EventView: View {
                         .background(Color.purple)
                         .foregroundColor(.white)
                         .cornerRadius(12)
+                    }
+                    
+                    // Show Join Event option for Pro users even without events
+                    if subscriptionManager.isProUser {
+                        Button(action: { 
+                            if firebaseService.isAuthenticated {
+                                showingJoinEvent = true
+                            } else {
+                                showingAuthSheet = true
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down.circle.fill")
+                                Text("Join Event with Code")
+                            }
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                        }
                     }
                     
                     Button(action: { showingAuthSheet = true }) {
@@ -105,13 +128,16 @@ struct EventView: View {
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
             }
+            .sheet(isPresented: $showingJoinEvent) {
+                JoinEventView()
+            }
         } else {
             // Has event - show normal content
             VStack(spacing: 0) {
                 // Event header bar
                 EventHeaderView()
                 
-                ContentView()
+                MainTabView()
             }
         }
     }

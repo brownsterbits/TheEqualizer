@@ -10,6 +10,15 @@ struct InviteShareView: View {
     @State private var isGenerating = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var statusMessage = ""
+    
+    // Computed property to get the latest event data
+    private var currentEventData: Event? {
+        if let currentEvent = dataStore.currentEvent, currentEvent.id == event.id {
+            return currentEvent
+        }
+        return dataStore.events.first { $0.id == event.id }
+    }
     
     var body: some View {
         NavigationView {
@@ -46,7 +55,7 @@ struct InviteShareView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(12)
                         
-                        Text(event.inviteCode != nil ? "This event already has an invite code" : "Share this code with others so they can join your event")
+                        Text((currentEventData?.inviteCode ?? event.inviteCode) != nil ? "This event already has an invite code" : "Share this code with others so they can join your event")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -82,8 +91,15 @@ struct InviteShareView: View {
                     // Generate invite code
                     VStack(spacing: 16) {
                         if isGenerating {
-                            ProgressView("Generating invite code...")
-                                .padding()
+                            VStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                Text(statusMessage.isEmpty ? "Preparing to share..." : statusMessage)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding()
                         } else {
                             Button(action: generateInviteCode) {
                                 HStack {
@@ -141,8 +157,14 @@ struct InviteShareView: View {
         }
         .onAppear {
             // If event already has an invite code, show it
-            if let existingCode = event.inviteCode {
+            if let existingCode = currentEventData?.inviteCode ?? event.inviteCode {
                 inviteCode = existingCode
+            }
+        }
+        .onChange(of: currentEventData?.inviteCode) { oldValue, newValue in
+            // Update the displayed code when it changes
+            if let newCode = newValue {
+                inviteCode = newCode
             }
         }
         .alert("Error", isPresented: $showingError) {
@@ -154,16 +176,31 @@ struct InviteShareView: View {
     
     private func generateInviteCode() {
         isGenerating = true
+        statusMessage = ""
         
         Task {
+            // Update status as we progress
+            if !firebaseService.isAuthenticated {
+                await MainActor.run {
+                    statusMessage = "Connecting to cloud..."
+                }
+            }
+            
+            if event.firebaseId == nil {
+                await MainActor.run {
+                    statusMessage = "Uploading event..."
+                }
+            }
+            
             let code = await dataStore.shareEvent(event)
             
             await MainActor.run {
                 isGenerating = false
+                statusMessage = ""
                 if let code = code {
                     inviteCode = code
                 } else {
-                    errorMessage = "Failed to generate invite code. Please try again."
+                    errorMessage = dataStore.syncError ?? "Failed to generate invite code. Please try again."
                     showingError = true
                 }
             }

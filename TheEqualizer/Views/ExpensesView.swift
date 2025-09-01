@@ -3,6 +3,7 @@ import SwiftUI
 struct ExpensesView: View {
     @EnvironmentObject var dataStore: DataStore
     @State private var showingAddExpense = false
+    @State private var isRefreshing = false
     
     var body: some View {
         List {
@@ -20,6 +21,9 @@ struct ExpensesView: View {
             }
         }
         .listStyle(PlainListStyle())
+        .refreshable {
+            await refreshData()
+        }
         .navigationTitle("Expenses")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(false)
@@ -40,6 +44,10 @@ struct ExpensesView: View {
         for index in offsets {
             dataStore.removeExpense(dataStore.expenses[index])
         }
+    }
+    
+    private func refreshData() async {
+        await dataStore.refreshCurrentEvent()
     }
 }
 
@@ -82,13 +90,13 @@ struct ExpenseRowView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("$\(expense.amount, specifier: "%.2f")")
+                    Text("$\(expense.amount.formatted())")
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.purple)
                     
                     if expense.totalContributions > 0 {
-                        Text("Net: $\(expense.remainingAmount, specifier: "%.2f")")
+                        Text("Net: $\(expense.remainingAmount.formatted())")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -105,7 +113,7 @@ struct ExpenseRowView: View {
                     
                     ForEach(expense.contributors) { contributor in
                         HStack {
-                            Text("\(contributor.name): $\(contributor.amount, specifier: "%.2f")")
+                            Text("\(contributor.name): $\(contributor.amount.formatted())")
                                 .font(.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -231,7 +239,7 @@ struct AddExpenseView: View {
             return
         }
         
-        guard let amountValue = Double(amount), amountValue > 0 else {
+        guard let amountValue = Decimal(string: amount), amountValue > 0 else {
             alertMessage = "Please enter a valid amount"
             showingAlert = true
             return
@@ -296,7 +304,7 @@ struct AddContributorView: View {
                             .keyboardType(.decimalPad)
                     }
                     
-                    Text("Maximum: $\(expense.remainingAmount, specifier: "%.2f")")
+                    Text("Maximum: $\(expense.remainingAmount.formatted())")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -332,7 +340,7 @@ struct AddContributorView: View {
             return
         }
         
-        guard let amountValue = Double(amount), amountValue > 0 else {
+        guard let amountValue = Decimal(string: amount), amountValue > 0 else {
             alertMessage = "Please enter a valid amount"
             showingAlert = true
             return

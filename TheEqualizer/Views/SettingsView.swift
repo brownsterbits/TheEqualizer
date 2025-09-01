@@ -84,7 +84,7 @@ struct SettingsView: View {
             
             // Support Section
             Section("Support") {
-                Link(destination: URL(string: "mailto:support@yourdomain.com")!) {
+                Link(destination: URL(string: "mailto:labs@brownster.com")!) {
                     HStack {
                         Text("Contact Support")
                         Spacer()
@@ -107,7 +107,8 @@ struct SettingsView: View {
                 }
             }
             
-            // Debug Section (temporary)
+            #if DEBUG
+            // Debug Section (only in debug builds)
             Section("Debug") {
                 Button(action: {
                     showingClearDataAlert = true
@@ -159,6 +160,7 @@ struct SettingsView: View {
                 }
                 .foregroundColor(.green)
             }
+            #endif
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)

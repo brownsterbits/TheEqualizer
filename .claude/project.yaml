@@ -1,0 +1,51 @@
+version: 1.0
+project:
+  name: TheEqualizer
+  type: multi-agent
+  language: ios-swift
+  created: 2025-08-17
+  
+agents:
+  architect:
+    role: "System architecture and design decisions"
+    context_files:
+      - "README.md"
+      - "**/*.config.*"
+      - "*.json"
+      - "*.yaml"
+    
+  developer:
+    role: "Implementation and coding"
+    context_files:
+      - "src/**/*"
+      - "tests/**/*"
+      - "**/*.swift"
+      - "**/*.js"
+      - "**/*.py"
+    
+  reviewer:
+    role: "Code review and quality assurance"
+    triggers:
+      - on: "pre-commit"
+
+context:
+  auto_include:
+    - "README.md"
+    - "package.json"
+    - "requirements.txt"
+    - ".env.example"
+    - "*.xcodeproj/project.pbxproj"
+    - "CLAUDE.md"
+  
+  smart_exclusions:
+    - "node_modules"
+    - "__pycache__"
+    - ".git"
+    - "*.log"
+    - "*.xcuserstate"
+    - "xcuserdata"
+
+learning:
+  capture_decisions: true
+  track_patterns: true
+  session_persistence: true

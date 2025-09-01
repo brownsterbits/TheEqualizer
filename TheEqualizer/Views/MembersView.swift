@@ -60,6 +60,9 @@ struct MembersView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
+        .refreshable {
+            await dataStore.refreshCurrentEvent()
+        }
         .navigationTitle("Members")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

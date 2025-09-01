@@ -26,18 +26,24 @@ class FirebaseService: ObservableObject {
     
     private func setupAuthListener() {
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            self?.user = user
-            self?.isAuthenticated = user != nil
+            Task { @MainActor in
+                self?.user = user
+                self?.isAuthenticated = user != nil
+            }
         }
     }
     
     func signInAnonymously() async throws {
         do {
             let result = try await Auth.auth().signInAnonymously()
-            user = result.user
-            isAuthenticated = true
+            await MainActor.run {
+                user = result.user
+                isAuthenticated = true
+            }
         } catch {
-            authError = error.localizedDescription
+            await MainActor.run {
+                authError = error.localizedDescription
+            }
             throw error
         }
     }
@@ -67,13 +73,17 @@ class FirebaseService: ObservableObject {
         
         do {
             let result = try await Auth.auth().signIn(with: credential)
-            user = result.user
-            isAuthenticated = true
+            await MainActor.run {
+                user = result.user
+                isAuthenticated = true
+            }
             
             // Update user profile in Firestore
             try await updateUserProfile(email: appleIDCredential.email)
         } catch {
-            authError = error.localizedDescription
+            await MainActor.run {
+                authError = error.localizedDescription
+            }
             throw error
         }
     }
@@ -108,12 +118,16 @@ class FirebaseService: ObservableObject {
         
         do {
             let result = try await currentUser.link(with: credential)
-            user = result.user
+            await MainActor.run {
+                user = result.user
+            }
             
             // Update user profile in Firestore
             try await updateUserProfile(email: appleIDCredential.email)
         } catch {
-            authError = error.localizedDescription
+            await MainActor.run {
+                authError = error.localizedDescription
+            }
             throw error
         }
     }
@@ -124,7 +138,8 @@ class FirebaseService: ObservableObject {
         let userRef = db.collection("users").document(userId)
         try await userRef.setData([
             "email": email ?? "",
-            "isPro": true, // Set based on subscription status
+            // Note: isPro status should be managed server-side via receipt validation
+            // Client-side status is handled by SubscriptionManager
             "createdAt": FieldValue.serverTimestamp(),
             "lastLogin": FieldValue.serverTimestamp()
         ], merge: true)
@@ -132,8 +147,10 @@ class FirebaseService: ObservableObject {
     
     func signOut() throws {
         try Auth.auth().signOut()
-        user = nil
-        isAuthenticated = false
+        Task { @MainActor in
+            user = nil
+            isAuthenticated = false
+        }
     }
     
     // MARK: - Apple Sign In Nonce
@@ -256,19 +273,25 @@ class FirebaseService: ObservableObject {
         let batch = db.batch()
         let membersRef = db.collection("events").document(eventId).collection("members")
         
-        // Delete existing members
+        // Fetch existing members to compare
         let snapshot = try await membersRef.getDocuments()
+        let existingIds = Set(snapshot.documents.map { $0.documentID })
+        let newIds = Set(members.map { $0.id.uuidString })
+        
+        // Delete members that no longer exist
         for doc in snapshot.documents {
-            batch.deleteDocument(doc.reference)
+            if !newIds.contains(doc.documentID) {
+                batch.deleteDocument(doc.reference)
+            }
         }
         
-        // Add new members
+        // Add or update members
         for member in members {
             let docRef = membersRef.document(member.id.uuidString)
             batch.setData([
                 "name": member.name,
                 "type": member.type.rawValue
-            ], forDocument: docRef)
+            ], forDocument: docRef, merge: true)
         }
         
         try await batch.commit()
@@ -278,28 +301,38 @@ class FirebaseService: ObservableObject {
         let batch = db.batch()
         let expensesRef = db.collection("events").document(eventId).collection("expenses")
         
-        // Delete existing expenses
+        // Fetch existing expenses to compare
         let snapshot = try await expensesRef.getDocuments()
+        let existingIds = Set(snapshot.documents.map { $0.documentID })
+        let newIds = Set(expenses.map { $0.id.uuidString })
+        
+        // Delete expenses that no longer exist
         for doc in snapshot.documents {
-            batch.deleteDocument(doc.reference)
+            if !newIds.contains(doc.documentID) {
+                batch.deleteDocument(doc.reference)
+            }
         }
         
-        // Add new expenses
+        // Add or update expenses
         for expense in expenses {
             let docRef = expensesRef.document(expense.id.uuidString)
             let contributorsData = expense.contributors.map { contributor in
-                ["name": contributor.name, "amount": contributor.amount]
+                [
+                    "id": contributor.id.uuidString,
+                    "name": contributor.name, 
+                    "amount": NSDecimalNumber(decimal: contributor.amount)
+                ]
             }
             
             batch.setData([
                 "description": expense.description,
-                "amount": expense.amount,
+                "amount": NSDecimalNumber(decimal: expense.amount),
                 "paidBy": expense.paidBy,
                 "notes": expense.notes,
                 "optOut": expense.optOut,
                 "date": expense.date,
                 "contributors": contributorsData
-            ], forDocument: docRef)
+            ], forDocument: docRef, merge: true)
         }
         
         try await batch.commit()
@@ -309,26 +342,59 @@ class FirebaseService: ObservableObject {
         let batch = db.batch()
         let donationsRef = db.collection("events").document(eventId).collection("donations")
         
-        // Delete existing donations
+        // Fetch existing donations to compare
         let snapshot = try await donationsRef.getDocuments()
+        let existingIds = Set(snapshot.documents.map { $0.documentID })
+        let newIds = Set(donations.map { $0.id.uuidString })
+        
+        // Delete donations that no longer exist
         for doc in snapshot.documents {
-            batch.deleteDocument(doc.reference)
+            if !newIds.contains(doc.documentID) {
+                batch.deleteDocument(doc.reference)
+            }
         }
         
-        // Add new donations
+        // Add or update donations
         for donation in donations {
             let docRef = donationsRef.document(donation.id.uuidString)
             batch.setData([
-                "amount": donation.amount,
+                "amount": NSDecimalNumber(decimal: donation.amount),
                 "notes": donation.notes,
                 "date": donation.date
-            ], forDocument: docRef)
+            ], forDocument: docRef, merge: true)
         }
         
         try await batch.commit()
     }
     
     // MARK: - Fetching Events
+    
+    func fetchEvent(eventId: String) async throws -> Event? {
+        guard user != nil else {
+            throw FirebaseError.notAuthenticated
+        }
+        
+        let document = try await db.collection("events").document(eventId).getDocument()
+        
+        guard document.exists, let data = document.data() else {
+            return nil
+        }
+        
+        // Fetch subcollections
+        let members = try await fetchMembers(eventId: eventId)
+        let expenses = try await fetchExpenses(eventId: eventId)
+        let donations = try await fetchDonations(eventId: eventId)
+        
+        let event = createEventFromFirebase(
+            data: data,
+            eventId: eventId,
+            members: members,
+            expenses: expenses,
+            donations: donations
+        )
+        
+        return event
+    }
     
     func fetchEvents() async throws -> [Event] {
         guard let userId = user?.uid else {
@@ -386,14 +452,40 @@ class FirebaseService: ObservableObject {
         return snapshot.documents.compactMap { doc in
             let data = doc.data()
             guard let description = data["description"] as? String,
-                  let amount = data["amount"] as? Double,
                   let paidBy = data["paidBy"] as? String else { return nil }
+            
+            let amount: Decimal
+            if let decimalNumber = data["amount"] as? NSDecimalNumber {
+                amount = decimalNumber.decimalValue
+            } else if let doubleValue = data["amount"] as? Double {
+                amount = Decimal(doubleValue)
+            } else {
+                return nil
+            }
             
             let contributorsData = data["contributors"] as? [[String: Any]] ?? []
             let contributors = contributorsData.compactMap { contributorData -> Contributor? in
-                guard let name = contributorData["name"] as? String,
-                      let amount = contributorData["amount"] as? Double else { return nil }
-                return Contributor(name: name, amount: amount)
+                guard let name = contributorData["name"] as? String else { return nil }
+                
+                let amount: Decimal
+                if let decimalNumber = contributorData["amount"] as? NSDecimalNumber {
+                    amount = decimalNumber.decimalValue
+                } else if let doubleValue = contributorData["amount"] as? Double {
+                    amount = Decimal(doubleValue)
+                } else {
+                    return nil
+                }
+                
+                // Parse contributor ID if it exists, otherwise generate a new one
+                let contributorId: UUID
+                if let idString = contributorData["id"] as? String,
+                   let uuid = UUID(uuidString: idString) {
+                    contributorId = uuid
+                } else {
+                    contributorId = UUID()
+                }
+                
+                return Contributor(id: contributorId, name: name, amount: amount)
             }
             
             return Expense(
@@ -414,7 +506,14 @@ class FirebaseService: ObservableObject {
         
         return snapshot.documents.compactMap { doc in
             let data = doc.data()
-            guard let amount = data["amount"] as? Double else { return nil }
+            let amount: Decimal
+            if let decimalNumber = data["amount"] as? NSDecimalNumber {
+                amount = decimalNumber.decimalValue
+            } else if let doubleValue = data["amount"] as? Double {
+                amount = Decimal(doubleValue)
+            } else {
+                return nil
+            }
             
             return Donation(
                 id: UUID(uuidString: doc.documentID) ?? UUID(),
@@ -459,11 +558,31 @@ class FirebaseService: ObservableObject {
             throw FirebaseError.invalidInviteCode
         }
         
-        // Add user as collaborator
+        // First, try to get the event to see if we already have access
         let eventRef = db.collection("events").document(eventId)
-        try await eventRef.updateData([
-            "collaborators.\(userId)": true
-        ])
+        let eventDoc = try? await eventRef.getDocument()
+        
+        // Check if we're already a collaborator
+        if let data = eventDoc?.data(),
+           let collaborators = data["collaborators"] as? [String: Bool],
+           collaborators[userId] == true {
+            // Already a collaborator, just return the event ID
+            return eventId
+        }
+        
+        // Try to add user as collaborator
+        // Note: This will fail if the user doesn't have write permission
+        // The proper solution is to use a Cloud Function that has admin privileges
+        do {
+            try await eventRef.updateData([
+                "collaborators.\(userId)": true
+            ])
+        } catch {
+            print("Error joining event with code: \(error)")
+            // For now, we'll need to handle this differently
+            // The event creator needs to manually add collaborators, or we need Cloud Functions
+            throw FirebaseError.permissionDenied
+        }
         
         return eventId
     }
@@ -480,11 +599,21 @@ class FirebaseService: ObservableObject {
                                          members: [Member], 
                                          expenses: [Expense], 
                                          donations: [Donation]) -> Event {
+        // Parse timestamps first
+        let createdAt: Date
+        if let createdAtTimestamp = data["createdAt"] as? Timestamp {
+            createdAt = createdAtTimestamp.dateValue()
+        } else {
+            createdAt = Date()
+        }
+        
+        // Create event with proper timestamps
         var event = Event(
             name: data["name"] as? String ?? "",
             members: members,
             expenses: expenses,
-            donations: donations
+            donations: donations,
+            createdAt: createdAt
         )
         
         // CRITICAL: Set the Firebase ID so we can match events properly
@@ -494,6 +623,18 @@ class FirebaseService: ObservableObject {
         if let storedId = data["localId"] as? String,
            let uuid = UUID(uuidString: storedId) {
             event.id = uuid
+        }
+        
+        // Parse lastModified timestamp
+        if let lastModifiedTimestamp = data["lastModified"] as? Timestamp {
+            event.lastModified = lastModifiedTimestamp.dateValue()
+        }
+        
+        // Parse other Firebase fields
+        event.createdBy = data["createdBy"] as? String
+        event.inviteCode = data["inviteCode"] as? String
+        if let collaborators = data["collaborators"] as? [String: Bool] {
+            event.collaborators = collaborators
         }
         
         return event
@@ -566,6 +707,9 @@ enum AuthError: LocalizedError {
 enum FirebaseError: LocalizedError {
     case notAuthenticated
     case invalidInviteCode
+    case inviteCodeExpired
+    case inviteCodeAlreadyUsed
+    case inviteCodeGenerationFailed
     case permissionDenied
     
     var errorDescription: String? {
@@ -573,7 +717,13 @@ enum FirebaseError: LocalizedError {
         case .notAuthenticated:
             return "User is not authenticated"
         case .invalidInviteCode:
-            return "Invalid or expired invite code"
+            return "Invalid invite code"
+        case .inviteCodeExpired:
+            return "This invite code has expired"
+        case .inviteCodeAlreadyUsed:
+            return "This invite code has already been used"
+        case .inviteCodeGenerationFailed:
+            return "Failed to generate invite code, please try again"
         case .permissionDenied:
             return "You don't have permission to perform this action"
         }

@@ -51,7 +51,7 @@ struct SummaryView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text("$\(dataStore.totalDonations, specifier: "%.2f")")
+                        Text("$\(dataStore.totalDonations.formatted())")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.green)
@@ -91,7 +91,7 @@ struct SummaryView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text("$\(dataStore.sharePerPerson, specifier: "%.2f")")
+                        Text("$\(dataStore.sharePerPerson.formatted())")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.purple)
@@ -118,7 +118,7 @@ struct SummaryView: View {
 
 struct SummaryCard: View {
     let title: String
-    let amount: Double
+    let amount: Decimal
     let color: Color
     let icon: String
     let showInfo: Bool
@@ -126,7 +126,7 @@ struct SummaryCard: View {
     
     @State private var showingInfoAlert = false
     
-    init(title: String, amount: Double, color: Color, icon: String, showInfo: Bool = false, infoText: String = "") {
+    init(title: String, amount: Decimal, color: Color, icon: String, showInfo: Bool = false, infoText: String = "") {
         self.title = title
         self.amount = amount
         self.color = color
@@ -156,7 +156,7 @@ struct SummaryCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            Text("$\(amount, specifier: "%.2f")")
+            Text("$\(amount.formatted())")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(color)
@@ -177,7 +177,7 @@ struct MemberBalanceRow: View {
     @EnvironmentObject var dataStore: DataStore
     let member: Member
     
-    var balance: Double {
+    var balance: Decimal {
         dataStore.balance(for: member.name)
     }
     
@@ -204,12 +204,12 @@ struct MemberBalanceRow: View {
                 }
                 
                 HStack(spacing: 12) {
-                    Label("\(getPaidAmount(), specifier: "%.2f")", systemImage: "creditcard")
+                    Label("\(getPaidAmount().formatted())", systemImage: "creditcard")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     if member.type == .contributing {
-                        Label("\(dataStore.sharePerPerson, specifier: "%.2f")", systemImage: "equal.circle")
+                        Label("\(dataStore.sharePerPerson.formatted())", systemImage: "equal.circle")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -223,7 +223,7 @@ struct MemberBalanceRow: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("$\(abs(balance), specifier: "%.2f")")
+                Text("$\(abs(balance).formatted())")
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(balanceColor)
@@ -234,7 +234,7 @@ struct MemberBalanceRow: View {
         .cornerRadius(10)
     }
     
-    private func getPaidAmount() -> Double {
+    private func getPaidAmount() -> Decimal {
         dataStore.expenses
             .filter { $0.paidBy == member.name && !$0.optOut }
             .reduce(0) { $0 + $1.amount }
