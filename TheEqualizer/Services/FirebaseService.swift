@@ -287,7 +287,6 @@ class FirebaseService: ObservableObject {
         
         // Fetch existing members to compare
         let snapshot = try await membersRef.getDocuments()
-        let existingIds = Set(snapshot.documents.map { $0.documentID })
         let newIds = Set(members.map { $0.id.uuidString })
         
         // Delete members that no longer exist
@@ -315,7 +314,6 @@ class FirebaseService: ObservableObject {
         
         // Fetch existing expenses to compare
         let snapshot = try await expensesRef.getDocuments()
-        let existingIds = Set(snapshot.documents.map { $0.documentID })
         let newIds = Set(expenses.map { $0.id.uuidString })
         
         // Delete expenses that no longer exist
@@ -356,7 +354,6 @@ class FirebaseService: ObservableObject {
         
         // Fetch existing donations to compare
         let snapshot = try await donationsRef.getDocuments()
-        let existingIds = Set(snapshot.documents.map { $0.documentID })
         let newIds = Set(donations.map { $0.id.uuidString })
         
         // Delete donations that no longer exist
@@ -665,33 +662,35 @@ class FirebaseService: ObservableObject {
     
     func listenToEvent(eventId: String, completion: @escaping (Event?) -> Void) -> ListenerRegistration {
         let listener = db.collection("events").document(eventId).addSnapshotListener { [weak self] snapshot, error in
-            guard let data = snapshot?.data(),
+            guard let self = self,
+                  let data = snapshot?.data(),
                   error == nil else {
                 completion(nil)
                 return
             }
-            
-            Task {
+
+            Task { [weak self] in
+                guard let self = self else { return }
                 do {
                     // Fetch all subcollections in parallel for better performance
-                    async let membersTask = self?.fetchMembers(eventId: eventId)
-                    async let expensesTask = self?.fetchExpenses(eventId: eventId)
-                    async let donationsTask = self?.fetchDonations(eventId: eventId)
+                    async let membersTask = self.fetchMembers(eventId: eventId)
+                    async let expensesTask = self.fetchExpenses(eventId: eventId)
+                    async let donationsTask = self.fetchDonations(eventId: eventId)
 
                     let (members, expenses, donations) = try await (
-                        membersTask ?? [],
-                        expensesTask ?? [],
-                        donationsTask ?? []
+                        membersTask,
+                        expensesTask,
+                        donationsTask
                     )
 
-                    let event = self?.createEventFromFirebase(
+                    let event = self.createEventFromFirebase(
                         data: data,
                         eventId: eventId,
                         members: members,
                         expenses: expenses,
                         donations: donations
                     )
-                    
+
                     await MainActor.run {
                         completion(event)
                     }
