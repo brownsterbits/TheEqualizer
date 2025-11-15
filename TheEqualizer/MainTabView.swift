@@ -8,18 +8,16 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Events tab - only show for Pro users
-            if subscriptionManager.isProUser {
-                NavigationView {
-                    EventsListView()
-                        .id("EventsListView-\(subscriptionManager.isProUser)")
-                }
-                .navigationViewStyle(StackNavigationViewStyle())
-                .tabItem {
-                    Label("Events", systemImage: "calendar")
-                }
-                .tag(0)
+            // Events tab - show for all users (Free users can create one event)
+            NavigationView {
+                EventsListView()
+                    .id("EventsListView-\(subscriptionManager.isProUser)")
             }
+            .navigationViewStyle(StackNavigationViewStyle())
+            .tabItem {
+                Label("Events", systemImage: "calendar")
+            }
+            .tag(0)
             
             NavigationView {
                 MembersView()
@@ -29,7 +27,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Members", systemImage: "person.3.fill")
             }
-            .tag(subscriptionManager.isProUser ? 1 : 0)
+            .tag(1)
             
             NavigationView {
                 ExpensesView()
@@ -38,7 +36,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Expenses", systemImage: "dollarsign.circle.fill")
             }
-            .tag(subscriptionManager.isProUser ? 2 : 1)
+            .tag(2)
             
             NavigationView {
                 DonationsView()
@@ -47,7 +45,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Treasury", systemImage: "gift.fill")
             }
-            .tag(subscriptionManager.isProUser ? 3 : 2)
+            .tag(3)
             
             NavigationView {
                 SummaryView()
@@ -56,7 +54,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Summary", systemImage: "chart.pie.fill")
             }
-            .tag(subscriptionManager.isProUser ? 4 : 3)
+            .tag(4)
             
             NavigationView {
                 SettlementView()
@@ -66,7 +64,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Settlement", systemImage: "equal.circle.fill")
             }
-            .tag(subscriptionManager.isProUser ? 5 : 4)
+            .tag(5)
             
             NavigationView {
                 SettingsView()
@@ -76,30 +74,24 @@ struct MainTabView: View {
             .tabItem {
                 Label("Settings", systemImage: "gear")
             }
-            .tag(subscriptionManager.isProUser ? 6 : 5)
+            .tag(6)
         }
         .accentColor(.purple)
         .id("TabView-\(refreshID)")
         .onChange(of: subscriptionManager.isProUser) { oldValue, newValue in
-            // Reset to appropriate first tab when subscription status changes
-            // For Pro users: tab 0 is Events
-            // For Free users: tab 0 is Members (Events tab doesn't exist)
-            selectedTab = 0
-            // Force refresh of navigation views
+            // Force refresh of navigation views when subscription status changes
             refreshID = UUID()
         }
         .onChange(of: dataStore.currentEvent) { oldEvent, newEvent in
             if let _ = newEvent, !subscriptionManager.isProUser {
-                // In free mode, after event creation, select Members tab and refresh
+                // In free mode, after event creation, stay on Events tab and refresh
                 selectedTab = 0
                 refreshID = UUID()
             }
         }
         .onAppear {
-            // Ensure selectedTab is valid on app start
-            if !subscriptionManager.isProUser && selectedTab == 0 {
-                selectedTab = 0 // Should be Members tab for free users
-            }
+            // Start on Events tab for all users
+            selectedTab = 0
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ForceUIRefresh"))) { _ in
             // Force UI refresh when data is cleared/reset
