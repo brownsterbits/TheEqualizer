@@ -32,8 +32,7 @@ class DataStore: ObservableObject {
         Task { @MainActor in
             let wasProBefore = isPro
             isPro = manager.isProUser
-            print("DEBUG: Initial sync - wasProBefore: \(wasProBefore), isPro: \(isPro), manager.isProUser: \(manager.isProUser)")
-            
+
             // If just became Pro, preserve current event and add to events list
             if !wasProBefore && isPro {
                 handleProUpgrade()
@@ -45,28 +44,23 @@ class DataStore: ObservableObject {
             for await _ in manager.$isProUser.values {
                 let wasProBefore = isPro
                 isPro = manager.isProUser
-                print("DEBUG: Subscription status changed - wasProBefore: \(wasProBefore), isPro: \(isPro), manager.isProUser: \(manager.isProUser)")
-                
+
                 if !wasProBefore && isPro {
                     handleProUpgrade()
                 } else if wasProBefore && !isPro {
                     handleProDowngrade()
                 }
-                
+
                 saveData()
             }
         }
     }
     
     private func handleProUpgrade() {
-        print("DEBUG: User upgraded to Pro")
-        print("DEBUG: Current event before upgrade: \(currentEvent?.name ?? "nil")")
-        
         // Ensure current event is preserved in events list
         if let current = currentEvent {
             if !events.contains(where: { $0.id == current.id }) {
                 events.append(current)
-                print("DEBUG: Added current event to events list: \(current.name)")
             }
         }
         
@@ -83,11 +77,9 @@ class DataStore: ObservableObject {
     }
     
     private func handleProDowngrade() {
-        print("DEBUG: User downgraded from Pro")
-        
         // Clear events list but keep current event
         events = []
-        
+
         saveData()
     }
     
@@ -147,8 +139,7 @@ class DataStore: ObservableObject {
         do {
             // Fetch events from Firebase
             let firebaseEvents = try await firebaseService.fetchEvents()
-            print("DEBUG: Fetched \(firebaseEvents.count) events from Firebase")
-            
+
             // Merge with local events - prefer local data for UI consistency
             var mergedEvents: [Event] = []
             var processedIds = Set<UUID>()
@@ -165,7 +156,6 @@ class DataStore: ObservableObject {
                 if !processedIds.contains(firebaseEvent.id) {
                     mergedEvents.append(firebaseEvent)
                     processedIds.insert(firebaseEvent.id)
-                    print("DEBUG: Added new shared event from Firebase: \(firebaseEvent.name)")
                 }
             }
             
@@ -176,9 +166,8 @@ class DataStore: ObservableObject {
             Task.detached {
                 for localEvent in eventsToUpload {
                     do {
-                        print("DEBUG: Uploading local event '\(localEvent.name)' to Firebase")
                         let firebaseId = try await firebaseService.createEvent(localEvent)
-                        
+
                         // Update local event with Firebase ID on main thread
                         await MainActor.run { [weak self] in
                             guard let self = self else { return }
@@ -208,8 +197,6 @@ class DataStore: ObservableObject {
                 if !seenIds.contains(event.id) {
                     cleanedEvents.append(event)
                     seenIds.insert(event.id)
-                } else {
-                    print("DEBUG: Removed duplicate event: \(event.name) with ID: \(event.id)")
                 }
             }
             
@@ -271,11 +258,8 @@ class DataStore: ObservableObject {
                     
                     if !hasChanges {
                         // No actual changes, skip update
-                        print("DEBUG: Skipping Firebase update - no content changes detected")
                         return
                     }
-                    
-                    print("DEBUG: Accepting real-time update - content has changed (expenses: \(currentExpenseCount) -> \(newExpenseCount), members: \(currentMemberCount) -> \(newMemberCount), donations: \(currentDonationCount) -> \(newDonationCount))")
                 }
                 
                 // Preserve the Firebase ID and local UUID
@@ -287,7 +271,6 @@ class DataStore: ObservableObject {
                 // Update current event
                 if self.currentEvent?.firebaseId == firebaseId {
                     self.currentEvent = event
-                    print("DEBUG: Updated current event from real-time listener (from other user)")
                 }
                 
                 // Update in events list
@@ -318,11 +301,9 @@ class DataStore: ObservableObject {
                 if let firebaseId = event.firebaseId {
                     // Update existing event
                     try await self.firebaseService.updateEvent(event, eventId: firebaseId)
-                    print("DEBUG: Updated event '\(event.name)' in Firebase")
                 } else {
                     // Create new event
                     let firebaseId = try await self.firebaseService.createEvent(event)
-                    print("DEBUG: Created new event '\(event.name)' in Firebase with ID: \(firebaseId)")
                     
                     await MainActor.run {
                         self.currentEvent?.firebaseId = firebaseId
@@ -370,11 +351,8 @@ class DataStore: ObservableObject {
                 
                 // Ensure listener is active
                 setupEventListener(firebaseId: firebaseId)
-                
-                print("DEBUG: Manually refreshed event from Firebase")
             }
         } catch {
-            print("Error refreshing event: \(error)")
             syncError = "Failed to refresh. Pull down to try again."
         }
     }
@@ -449,9 +427,8 @@ class DataStore: ObservableObject {
     
     func selectEvent(_ event: Event) {
         // State transition guard: Only Pro users can select events
-        guard isPro else { 
-            print("WARNING: Free user attempting to select event")
-            return 
+        guard isPro else {
+            return
         }
         
         currentEvent = event
@@ -488,9 +465,7 @@ class DataStore: ObservableObject {
             Task {
                 do {
                     try await firebaseService.deleteEvent(eventId: firebaseId)
-                    print("DEBUG: Deleted event from Firebase")
                 } catch {
-                    print("ERROR: Failed to delete from Firebase: \(error)")
                     // If permission denied, show error but keep local delete
                     // (user can't delete shared events they don't own)
                     if error.localizedDescription.lowercased().contains("permission") {
@@ -512,13 +487,11 @@ class DataStore: ObservableObject {
     func shareEvent(_ event: Event) async -> String? {
         // First ensure we're authenticated
         if !firebaseService.isAuthenticated {
-            print("DEBUG: Not authenticated, attempting to sign in...")
             do {
                 try await firebaseService.signInAnonymously()
                 // Wait a moment for auth to stabilize
                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             } catch {
-                print("ERROR: Failed to authenticate: \(error)")
                 syncError = "Failed to connect. Please check your internet connection."
                 return nil
             }
@@ -527,7 +500,6 @@ class DataStore: ObservableObject {
         // If event doesn't have a Firebase ID, we need to upload it first
         var eventFirebaseId = event.firebaseId
         if eventFirebaseId == nil {
-            print("DEBUG: Event has no Firebase ID, uploading to Firebase...")
             isSyncing = true
             do {
                 eventFirebaseId = try await firebaseService.createEvent(event)
@@ -548,18 +520,16 @@ class DataStore: ObservableObject {
                     setupEventListener(firebaseId: firebaseId)
                 }
             } catch {
-                print("ERROR: Failed to upload event to Firebase: \(error)")
                 isSyncing = false
                 syncError = "Failed to prepare event for sharing. Please try again."
                 return nil
             }
             isSyncing = false
         }
-        
-        guard let firebaseId = eventFirebaseId else { 
-            print("ERROR: Still no Firebase ID after upload attempt")
+
+        guard let firebaseId = eventFirebaseId else {
             syncError = "Failed to prepare event for sharing."
-            return nil 
+            return nil
         }
         
         do {
@@ -586,21 +556,18 @@ class DataStore: ObservableObject {
     func handleInviteCode(_ code: String) async -> Bool {
         // First ensure we're authenticated (even non-Pro users need auth for shared events)
         if !firebaseService.isAuthenticated {
-            print("DEBUG: Not authenticated, signing in anonymously for shared event...")
             do {
                 try await firebaseService.signInAnonymously()
                 // Wait a moment for auth to stabilize
                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             } catch {
-                print("ERROR: Failed to authenticate for shared event: \(error)")
                 syncError = "Failed to connect. Please check your internet connection."
                 return false
             }
         }
-        
+
         do {
             let eventId = try await firebaseService.joinEventWithCode(code)
-            print("DEBUG: Successfully joined event with ID: \(eventId)")
             
             // For shared events, allow sync even for non-Pro users
             if isPro {
@@ -632,10 +599,8 @@ class DataStore: ObservableObject {
         do {
             // Fetch the specific shared event
             let event = try await firebaseService.fetchEvent(eventId: firebaseEventId)
-            
+
             if let event = event {
-                print("DEBUG: Fetched shared event: \(event.name)")
-                
                 // For non-Pro users, replace their single event with the shared one
                 if !isPro {
                     currentEvent = event
@@ -650,16 +615,13 @@ class DataStore: ObservableObject {
                 
                 // Setup real-time listener for this shared event
                 setupEventListener(firebaseId: firebaseEventId)
-                
+
                 // Save locally
                 saveData()
-                
-                print("DEBUG: Successfully added shared event to local storage")
             }
             
             isSyncing = false
         } catch {
-            print("Error syncing shared event: \(error)")
             syncError = "Failed to load shared event. Please try again."
             isSyncing = false
         }
@@ -926,9 +888,8 @@ class DataStore: ObservableObject {
         
         // Save pro status
         UserDefaults.standard.set(isPro, forKey: proKey)
-        
-        // Force synchronize to ensure data is persisted
-        UserDefaults.standard.synchronize()
+
+        // Note: synchronize() is deprecated and unnecessary - iOS handles persistence automatically
     }
     
     private func loadData() {
@@ -994,8 +955,6 @@ class DataStore: ObservableObject {
     }
     
     func clearAllData() {
-        print("DEBUG: Clearing all data...")
-        
         // Reset all state variables
         currentEvent = nil
         events = []
@@ -1010,9 +969,6 @@ class DataStore: ObservableObject {
         UserDefaults.standard.removeObject(forKey: eventsKey)
         UserDefaults.standard.removeObject(forKey: proKey)
         
-        // Force synchronize to ensure data is cleared
-        UserDefaults.standard.synchronize()
-        
         // Reset subscription manager if available
         if let manager = subscriptionManager {
             Task { @MainActor in
@@ -1024,8 +980,6 @@ class DataStore: ObservableObject {
                 NotificationCenter.default.post(name: Notification.Name("ForceUIRefresh"), object: nil)
             }
         }
-        
-        print("DEBUG: All data cleared")
     }
     
     // MARK: - Navigation Health Check
@@ -1065,8 +1019,6 @@ class DataStore: ObservableObject {
     }
     
     func resetToFreeUser() {
-        print("DEBUG: Resetting to free user...")
-        
         // Reset to free user state
         isPro = false
         
@@ -1087,9 +1039,6 @@ class DataStore: ObservableObject {
         UserDefaults.standard.set(false, forKey: proKey)
         UserDefaults.standard.removeObject(forKey: eventsKey)
         
-        // Force synchronize
-        UserDefaults.standard.synchronize()
-        
         // Update subscription manager and force UI refresh
         if let manager = subscriptionManager {
             Task { @MainActor in
@@ -1104,8 +1053,6 @@ class DataStore: ObservableObject {
         
         // Save the current event state
         saveData()
-        
-        print("DEBUG: Reset to free user completed")
     }
     
     // MARK: - Diagnostics

@@ -211,7 +211,7 @@ class FirebaseService: ObservableObject {
             throw FirebaseError.notAuthenticated
         }
         
-        let eventData: [String: Any] = [
+        var eventData: [String: Any] = [
             "name": event.name,
             "localId": event.id.uuidString,  // Store the local UUID for consistency
             "createdBy": userId,
@@ -219,6 +219,11 @@ class FirebaseService: ObservableObject {
             "lastModified": FieldValue.serverTimestamp(),
             "collaborators": [userId: true]
         ]
+
+        // Include inviteCode if present (for sharing persistence)
+        if let inviteCode = event.inviteCode {
+            eventData["inviteCode"] = inviteCode
+        }
         
         let docRef = try await db.collection("events").addDocument(data: eventData)
         
@@ -236,11 +241,18 @@ class FirebaseService: ObservableObject {
         }
         
         let eventRef = db.collection("events").document(eventId)
-        
-        try await eventRef.updateData([
+
+        var updateData: [String: Any] = [
             "name": event.name,
             "lastModified": FieldValue.serverTimestamp()
-        ])
+        ]
+
+        // Persist inviteCode if present (critical for sharing persistence)
+        if let inviteCode = event.inviteCode {
+            updateData["inviteCode"] = inviteCode
+        }
+
+        try await eventRef.updateData(updateData)
         
         // Update subcollections
         try await saveMembers(event.members, eventId: eventId)
@@ -530,10 +542,20 @@ class FirebaseService: ObservableObject {
         guard let userId = user?.uid else {
             throw FirebaseError.notAuthenticated
         }
-        
-        // Generate a 6-character invite code
+
+        // Clean up old invite codes for this event to prevent accumulation
+        let existingInvites = try await db.collection("invites")
+            .whereField("eventId", isEqualTo: eventId)
+            .getDocuments()
+
+        // Delete old invite codes for this event
+        for document in existingInvites.documents {
+            try await document.reference.delete()
+        }
+
+        // Generate a new 6-character invite code
         let code = generateInviteCode()
-        
+
         // Save the mapping
         try await db.collection("invites").document(code).setData([
             "eventId": eventId,
@@ -541,7 +563,7 @@ class FirebaseService: ObservableObject {
             "createdAt": FieldValue.serverTimestamp(),
             "expiresAt": FieldValue.serverTimestamp() // Add expiration logic if needed
         ])
-        
+
         return code
     }
     
@@ -578,7 +600,6 @@ class FirebaseService: ObservableObject {
                 "collaborators.\(userId)": true
             ])
         } catch {
-            print("Error joining event with code: \(error)")
             // For now, we'll need to handle this differently
             // The event creator needs to manually add collaborators, or we need Cloud Functions
             throw FirebaseError.permissionDenied
@@ -652,10 +673,17 @@ class FirebaseService: ObservableObject {
             
             Task {
                 do {
-                    let members = try await self?.fetchMembers(eventId: eventId) ?? []
-                    let expenses = try await self?.fetchExpenses(eventId: eventId) ?? []
-                    let donations = try await self?.fetchDonations(eventId: eventId) ?? []
-                    
+                    // Fetch all subcollections in parallel for better performance
+                    async let membersTask = self?.fetchMembers(eventId: eventId)
+                    async let expensesTask = self?.fetchExpenses(eventId: eventId)
+                    async let donationsTask = self?.fetchDonations(eventId: eventId)
+
+                    let (members, expenses, donations) = try await (
+                        membersTask ?? [],
+                        expensesTask ?? [],
+                        donationsTask ?? []
+                    )
+
                     let event = self?.createEventFromFirebase(
                         data: data,
                         eventId: eventId,
@@ -668,7 +696,6 @@ class FirebaseService: ObservableObject {
                         completion(event)
                     }
                 } catch {
-                    print("Error fetching event details: \(error)")
                     completion(nil)
                 }
             }

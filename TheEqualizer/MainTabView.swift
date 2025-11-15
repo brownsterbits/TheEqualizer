@@ -95,9 +95,8 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ForceUIRefresh"))) { _ in
             // Force UI refresh when data is cleared/reset
-            print("DEBUG: Forcing UI refresh due to data reset")
             refreshID = UUID()
-            
+
             // Reset to first tab
             selectedTab = 0
         }
