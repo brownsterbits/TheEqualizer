@@ -103,7 +103,7 @@ struct AddDonationView: View {
                 }
                 
                 Section {
-                    Text("Treasury donations help reduce the amount each contributing member needs to pay")
+                    Text("Treasury donations are contributions—often anonymous and not intended for reimbursement—that help reduce the amount contributing members need to pay.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

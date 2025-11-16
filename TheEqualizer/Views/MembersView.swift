@@ -136,9 +136,9 @@ struct AddMemberView: View {
                 }
                 
                 Section {
-                    Text(memberType == .contributing ? 
-                         "Contributing members share expenses equally" : 
-                         "Reimbursement-only members can be reimbursed but don't share in expenses")
+                    Text(memberType == .contributing ?
+                         "Contributing members share expenses equally" :
+                         "Reimbursement-only members have paid for expenses and must be reimbursed, but are not expected to contribute equally like full contributing members.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

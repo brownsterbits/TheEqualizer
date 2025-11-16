@@ -118,8 +118,8 @@ struct PaywallView: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 16) {
-                            Link("Terms of Service", destination: URL(string: "https://chadmbrown.github.io/the-equalizer-legal/terms.html")!)
-                            Link("Privacy Policy", destination: URL(string: "https://chadmbrown.github.io/the-equalizer-legal/privacy.html")!)
+                            Link("Terms of Service", destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/terms.html")!)
+                            Link("Privacy Policy", destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/privacy.html")!)
                         }
                         .font(.caption)
                         .foregroundColor(.secondary)
