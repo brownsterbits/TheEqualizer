@@ -113,16 +113,22 @@ class DataStore: ObservableObject {
     private func setupFirebaseListener() {
         // Listen to auth state changes
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            Task { @MainActor in
-                self?.isFirebaseConnected = user != nil
+            // Run Firebase sync on background thread to avoid blocking UI
+            Task.detached { [weak self] in
+                await MainActor.run {
+                    self?.isFirebaseConnected = user != nil
+                }
+
                 if user != nil {
                     // Sync for Pro users or if we have a shared event
-                    if self?.isPro == true {
+                    if await self?.isPro == true {
                         await self?.syncWithFirebase()
-                    } else if let currentEvent = self?.currentEvent, 
+                    } else if let currentEvent = await self?.currentEvent,
                              currentEvent.firebaseId != nil {
                         // Non-Pro user with a shared event - set up listener
-                        self?.setupEventListener(firebaseId: currentEvent.firebaseId!)
+                        await MainActor.run {
+                            self?.setupEventListener(firebaseId: currentEvent.firebaseId!)
+                        }
                     }
                 }
             }
@@ -542,16 +548,20 @@ class DataStore: ObservableObject {
         
         do {
             let inviteCode = try await firebaseService.createInviteCode(for: firebaseId)
-            
-            // Update the event's invite code
+
+            // Update the event's invite code locally
             if let index = events.firstIndex(where: { $0.id == event.id }) {
                 events[index].inviteCode = inviteCode
             }
             if currentEvent?.id == event.id {
                 currentEvent?.inviteCode = inviteCode
             }
-            
+
             saveData()
+
+            // CRITICAL: Persist inviteCode to Firebase so it survives collaborator edits
+            saveToFirebase()
+
             return inviteCode
         } catch {
             print("Error creating invite code: \(error)")

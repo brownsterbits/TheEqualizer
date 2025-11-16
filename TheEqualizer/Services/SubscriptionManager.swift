@@ -2,16 +2,15 @@ import Foundation
 import StoreKit
 import SwiftUI
 
-@MainActor
 class SubscriptionManager: ObservableObject {
     @Published var isProUser = false
     @Published var subscriptionStatus: SubscriptionStatus = .notSubscribed
     @Published var currentSubscription: String?
-    
+
     private let productIds = ["pro_monthly", "pro_yearly"]
     private var products: [Product] = []
     private var transactionListener: Task<Void, Error>?
-    
+
     enum SubscriptionStatus {
         case notSubscribed
         case pending
@@ -19,13 +18,13 @@ class SubscriptionManager: ObservableObject {
         case expired
         case failed
     }
-    
+
     init() {
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
 
-        // Load products and check status asynchronously (non-blocking init)
-        Task { @MainActor [weak self] in
+        // Load products and check status on BACKGROUND thread to avoid blocking UI
+        Task.detached { [weak self] in
             await self?.loadProducts()
             await self?.checkSubscriptionStatus()
         }
@@ -56,7 +55,9 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Purchase
     
     func purchase(_ product: Product) async {
-        subscriptionStatus = .pending
+        await MainActor.run {
+            self.subscriptionStatus = .pending
+        }
 
         do {
             let result = try await product.purchase()
@@ -68,16 +69,24 @@ class SubscriptionManager: ObservableObject {
                 await transaction.finish()
 
             case .userCancelled:
-                subscriptionStatus = .notSubscribed
+                await MainActor.run {
+                    self.subscriptionStatus = .notSubscribed
+                }
 
             case .pending:
-                subscriptionStatus = .notSubscribed
+                await MainActor.run {
+                    self.subscriptionStatus = .notSubscribed
+                }
 
             @unknown default:
-                subscriptionStatus = .failed
+                await MainActor.run {
+                    self.subscriptionStatus = .failed
+                }
             }
         } catch {
-            subscriptionStatus = .failed
+            await MainActor.run {
+                self.subscriptionStatus = .failed
+            }
         }
     }
     
@@ -86,11 +95,12 @@ class SubscriptionManager: ObservableObject {
     func checkSubscriptionStatus() async {
         var isActive = false
         var currentProductId: String?
-        
+
+        // Run StoreKit check on background thread (can be slow with network issues)
         for await result in StoreKit.Transaction.currentEntitlements {
             do {
                 let transaction = try checkVerified(result)
-                
+
                 if productIds.contains(transaction.productID) {
                     // Check if still valid (not expired or revoked)
                     if transaction.revocationDate == nil {
@@ -102,10 +112,13 @@ class SubscriptionManager: ObservableObject {
                 print("Failed to verify transaction: \(error)")
             }
         }
-        
-        isProUser = isActive
-        currentSubscription = currentProductId
-        subscriptionStatus = isActive ? .subscribed : .notSubscribed
+
+        // Only hop to MainActor when updating @Published properties
+        await MainActor.run {
+            self.isProUser = isActive
+            self.currentSubscription = currentProductId
+            self.subscriptionStatus = isActive ? .subscribed : .notSubscribed
+        }
     }
     
     // MARK: - Transaction Listening
@@ -125,14 +138,14 @@ class SubscriptionManager: ObservableObject {
     }
     
     private func updateSubscriptionStatus(for transaction: StoreKit.Transaction) async {
-        if productIds.contains(transaction.productID) && transaction.revocationDate == nil {
-            isProUser = true
-            currentSubscription = transaction.productID
-            subscriptionStatus = .subscribed
-        } else {
-            isProUser = false
-            currentSubscription = nil
-            subscriptionStatus = .notSubscribed
+        let isActive = productIds.contains(transaction.productID) && transaction.revocationDate == nil
+        let productId = isActive ? transaction.productID : nil
+
+        // Only hop to MainActor when updating @Published properties
+        await MainActor.run {
+            self.isProUser = isActive
+            self.currentSubscription = productId
+            self.subscriptionStatus = isActive ? .subscribed : .notSubscribed
         }
     }
     
