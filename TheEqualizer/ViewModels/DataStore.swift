@@ -228,10 +228,13 @@ class DataStore: ObservableObject {
                 }
             }
 
+            // Capture immutable copy for Swift 6 concurrency
+            let finalEvents = cleanedEvents
+
             // Update UI properties on main actor
-            await MainActor.run {
+            await MainActor.run { [finalEvents] in
                 // Update events list
-                self.events = cleanedEvents
+                self.events = finalEvents
 
                 // If no current event, set to first available
                 if self.currentEvent == nil && !self.events.isEmpty {
