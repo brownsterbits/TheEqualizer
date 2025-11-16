@@ -297,6 +297,12 @@ struct AddContributorView: View {
                             Text(member).tag(member)
                         }
                     }
+                    .onAppear {
+                        // Reset selection if current selection is not in available members
+                        if !selectedMember.isEmpty && !availableMembers.contains(selectedMember) {
+                            selectedMember = ""
+                        }
+                    }
                     
                     HStack {
                         Text("$")
