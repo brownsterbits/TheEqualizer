@@ -219,6 +219,36 @@ Group vacation coming up? Split costs fairly, track who paid what, accept donati
 
 ---
 
+## App Store Connect URLs
+
+### Support URL (Required)
+```
+https://brownsterbits.github.io/TheEqualizer/help.html
+```
+Comprehensive Help & FAQ page with:
+- What is The Equalizer
+- How It Works
+- Key Concepts explained
+- Common Scenarios
+- Extensive FAQ (12+ questions)
+- Contact information
+
+### Marketing URL (Optional but Recommended)
+```
+https://brownsterbits.github.io/TheEqualizer/
+```
+Professional landing page with:
+- Hero section with value proposition
+- Feature highlights
+- How It Works workflow
+- Use case examples
+- Free vs Pro pricing comparison
+- Full footer with all links
+
+**Note:** Both URLs are GitHub Pages hosted and can be updated anytime without app submission.
+
+---
+
 ## Notes for Future Updates
 
 - Keep promotional text under 170 characters (Apple's limit)
