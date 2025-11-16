@@ -85,10 +85,10 @@ struct AuthenticationView: View {
                 
                 // Privacy links
                 HStack {
-                    Link("Privacy Policy", destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/privacy.html")!)
+                    Link("Privacy Policy", destination: URL(string: "https://brownsterbits.github.io/TheEqualizer/privacy.html")!)
                     Text("•")
                         .foregroundColor(.secondary)
-                    Link("Terms of Service", destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/terms.html")!)
+                    Link("Terms of Service", destination: URL(string: "https://brownsterbits.github.io/TheEqualizer/terms.html")!)
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)

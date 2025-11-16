@@ -63,7 +63,7 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                Link(destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/privacy.html")!) {
+                Link(destination: URL(string: "https://brownsterbits.github.io/TheEqualizer/privacy.html")!) {
                     HStack {
                         Text("Privacy Policy")
                         Spacer()
@@ -72,7 +72,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Link(destination: URL(string: "https://github.com/brownsterbits/TheEqualizer/blob/main/docs/terms.html")!) {
+                Link(destination: URL(string: "https://brownsterbits.github.io/TheEqualizer/terms.html")!) {
                     HStack {
                         Text("Terms of Service")
                         Spacer()
