@@ -148,27 +148,37 @@ class DataStore: ObservableObject {
         }
     }
     
-    @MainActor
+    nonisolated
     private func syncWithFirebase() async {
-        guard firebaseService.isAuthenticated && isPro else { return }
-        
-        isSyncing = true
-        syncError = nil
-        
+        // Capture main-actor properties before leaving main actor
+        let isAuthenticated = await firebaseService.isAuthenticated
+        let isPro = await self.isPro
+
+        guard isAuthenticated && isPro else { return }
+
+        await MainActor.run {
+            self.isSyncing = true
+            self.syncError = nil
+        }
+
         do {
-            // Fetch events from Firebase
+            // Fetch events from Firebase ON BACKGROUND THREAD
+            let firebaseService = await self.firebaseService
             let firebaseEvents = try await firebaseService.fetchEvents()
+
+            // Capture local events from main actor
+            let localEvents = await self.events
 
             // Merge with local events - prefer local data for UI consistency
             var mergedEvents: [Event] = []
             var processedIds = Set<UUID>()
-            
+
             // First, add all local events (they have the most recent local changes)
-            for localEvent in events {
+            for localEvent in localEvents {
                 mergedEvents.append(localEvent)
                 processedIds.insert(localEvent.id)
             }
-            
+
             // Then add Firebase events that we don't have locally (shared from other devices)
             for firebaseEvent in firebaseEvents {
                 // Check by UUID to prevent duplicates
@@ -177,10 +187,9 @@ class DataStore: ObservableObject {
                     processedIds.insert(firebaseEvent.id)
                 }
             }
-            
+
             // Upload local events that aren't in Firebase (in background)
-            let eventsToUpload = self.events.filter { $0.firebaseId == nil }
-            let firebaseService = self.firebaseService
+            let eventsToUpload = localEvents.filter { $0.firebaseId == nil }
             
             Task.detached {
                 for localEvent in eventsToUpload {
@@ -211,37 +220,42 @@ class DataStore: ObservableObject {
             // Remove any duplicates before updating (cleanup for existing bug)
             var cleanedEvents: [Event] = []
             var seenIds = Set<UUID>()
-            
+
             for event in mergedEvents {
                 if !seenIds.contains(event.id) {
                     cleanedEvents.append(event)
                     seenIds.insert(event.id)
                 }
             }
-            
-            // Update events list
-            self.events = cleanedEvents
-            
-            // If no current event, set to first available
-            if currentEvent == nil && !events.isEmpty {
-                currentEvent = events.first
+
+            // Update UI properties on main actor
+            await MainActor.run {
+                // Update events list
+                self.events = cleanedEvents
+
+                // If no current event, set to first available
+                if self.currentEvent == nil && !self.events.isEmpty {
+                    self.currentEvent = self.events.first
+                }
+
+                // Setup real-time listener for current event
+                if let currentEvent = self.currentEvent, let firebaseId = currentEvent.firebaseId {
+                    self.setupEventListener(firebaseId: firebaseId)
+                }
+
+                // Save locally immediately
+                self.saveData()
+
+                self.hasUnsavedChanges = false
+                self.isSyncing = false
             }
-            
-            // Setup real-time listener for current event
-            if let currentEvent = currentEvent, let firebaseId = currentEvent.firebaseId {
-                setupEventListener(firebaseId: firebaseId)
-            }
-            
-            // Save locally immediately
-            saveData()
-            
-            hasUnsavedChanges = false
-            isSyncing = false
         } catch {
             print("Error syncing with Firebase: \(error)")
-            syncError = error.localizedDescription
-            isSyncing = false
-            
+            await MainActor.run {
+                self.syncError = error.localizedDescription
+                self.isSyncing = false
+            }
+
             // Don't let sync failures affect local functionality
             // Data persists locally and will sync when connection improves
         }
