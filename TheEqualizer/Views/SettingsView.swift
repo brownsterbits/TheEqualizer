@@ -84,6 +84,15 @@ struct SettingsView: View {
             
             // Support Section
             Section("Support") {
+                Link(destination: URL(string: "https://brownsterbits.github.io/TheEqualizer/help.html")!) {
+                    HStack {
+                        Text("Help & FAQ")
+                        Spacer()
+                        Image(systemName: "questionmark.circle")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
                 Link(destination: URL(string: "mailto:bits@brownster.com")!) {
                     HStack {
                         Text("Contact Support")
@@ -92,7 +101,7 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 Button(action: {
                     Task {
                         await subscriptionManager.restorePurchases()
