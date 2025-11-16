@@ -38,29 +38,24 @@ struct SettlementView: View {
                 } else {
                     // Treasury Total Card
                     VStack(spacing: 12) {
-                        HStack {
-                            Image(systemName: "banknote.fill")
-                                .font(.title)
-                                .foregroundColor(.green)
+                        Image(systemName: "banknote.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.green)
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Treasury Total")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
+                        Text("Treasury Total")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
 
-                                Text("$\(dataStore.totalDonations.asCurrency())")
-                                    .font(.system(size: 36, weight: .bold))
-                                    .foregroundColor(.green)
-                            }
-
-                            Spacer()
-                        }
+                        Text("$\(dataStore.totalDonations.asCurrency())")
+                            .font(.system(size: 42, weight: .bold))
+                            .foregroundColor(.green)
 
                         Text("Available funds from donations to cover reimbursements")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.center)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.green.opacity(0.1))
                     .cornerRadius(12)
@@ -147,19 +142,14 @@ struct SettlementView: View {
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.large)
         .background(Color(UIColor.systemGroupedBackground))
-        .actionSheet(isPresented: $showingExportOptions) {
-            ActionSheet(
-                title: Text("Export Settlement"),
-                buttons: [
-                    .default(Text("Copy to Clipboard")) {
-                        copyToClipboard()
-                    },
-                    .default(Text("Share")) {
-                        shareSettlement()
-                    },
-                    .cancel()
-                ]
-            )
+        .confirmationDialog("Export Settlement", isPresented: $showingExportOptions, titleVisibility: .visible) {
+            Button("Copy to Clipboard") {
+                copyToClipboard()
+            }
+            Button("Share") {
+                shareSettlement()
+            }
+            Button("Cancel", role: .cancel) { }
         }
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(text: exportedText)
