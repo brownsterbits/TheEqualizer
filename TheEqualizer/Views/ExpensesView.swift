@@ -297,12 +297,6 @@ struct AddContributorView: View {
                             Text(member).tag(member)
                         }
                     }
-                    .onAppear {
-                        // Reset selection if current selection is not in available members
-                        if !selectedMember.isEmpty && !availableMembers.contains(selectedMember) {
-                            selectedMember = ""
-                        }
-                    }
                     
                     HStack {
                         Text("$")
@@ -335,6 +329,13 @@ struct AddContributorView: View {
                 Button("OK") { }
             } message: {
                 Text(alertMessage)
+            }
+        }
+        .onAppear {
+            // Validate selection when view appears - reset if not in available members
+            // This prevents Picker errors when @State persists invalid selections
+            if !selectedMember.isEmpty && !availableMembers.contains(selectedMember) {
+                selectedMember = ""
             }
         }
     }
