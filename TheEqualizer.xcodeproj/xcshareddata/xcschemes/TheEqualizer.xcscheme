@@ -74,9 +74,6 @@
             ReferencedContainer = "container:TheEqualizer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <StoreKitConfigurationFileReference
-         identifier = "../../TheEqualizer/TheEqualizer.storekit">
-      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

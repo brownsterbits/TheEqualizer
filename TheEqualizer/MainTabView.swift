@@ -83,7 +83,9 @@ struct MainTabView: View {
             refreshID = UUID()
         }
         .onChange(of: dataStore.currentEvent) { oldEvent, newEvent in
-            if let _ = newEvent, !subscriptionManager.isProUser {
+            // Only navigate to Events tab when creating a NEW event (oldEvent was nil)
+            // Don't navigate when just modifying the current event
+            if oldEvent == nil && newEvent != nil && !subscriptionManager.isProUser {
                 // In free mode, after event creation, stay on Events tab and refresh
                 selectedTab = 0
                 refreshID = UUID()
