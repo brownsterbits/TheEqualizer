@@ -783,7 +783,32 @@ class DataStore: ObservableObject {
             saveToFirebase()
         }
     }
-    
+
+    func updateExpense(_ expense: Expense, description: String, amount: Decimal, paidBy: String, notes: String, optOut: Bool) {
+        guard var event = currentEvent,
+              let index = event.expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+
+        // Update the expense properties
+        event.expenses[index].description = description
+        event.expenses[index].amount = amount
+        event.expenses[index].paidBy = paidBy
+        event.expenses[index].notes = notes
+        event.expenses[index].optOut = optOut
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
+        hasUnsavedChanges = true
+
+        // Save locally immediately
+        saveData()
+
+        // Sync to Firebase in background if authenticated and (Pro or shared event)
+        if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
+            saveToFirebase()
+        }
+    }
+
     func addContributor(to expense: Expense, name: String, amount: Decimal) {
         guard var event = currentEvent,
               let index = event.expenses.firstIndex(where: { $0.id == expense.id }) else { return }

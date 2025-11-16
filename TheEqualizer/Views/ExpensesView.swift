@@ -56,10 +56,11 @@ struct ExpenseRowView: View {
     let expense: Expense
     @State private var isExpanded = false
     @State private var showingAddContributor = false
-    
+    @State private var showingEditExpense = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Main expense info
+            // Main expense info - tappable to edit
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -75,20 +76,20 @@ struct ExpenseRowView: View {
                                 .cornerRadius(4)
                         }
                     }
-                    
+
                     Text("Paid by \(expense.paidBy)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     if !expense.notes.isEmpty {
                         Text(expense.notes)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("$\(expense.amount.asCurrency())")
                         .font(.title3)
@@ -101,6 +102,10 @@ struct ExpenseRowView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showingEditExpense = true
             }
             
             // Contributors
@@ -119,7 +124,7 @@ struct ExpenseRowView: View {
                                 .padding(.vertical, 2)
                                 .background(Color.blue.opacity(0.1))
                                 .cornerRadius(4)
-                            
+
                             Button(action: {
                                 dataStore.removeContributor(from: expense, contributor: contributor)
                             }) {
@@ -127,6 +132,7 @@ struct ExpenseRowView: View {
                                     .foregroundColor(.gray)
                                     .imageScale(.small)
                             }
+                            .buttonStyle(.borderless)
                         }
                     }
                 }
@@ -142,12 +148,16 @@ struct ExpenseRowView: View {
                     .font(.caption)
                     .foregroundColor(.blue)
                 }
-                .sheet(isPresented: $showingAddContributor) {
-                    AddContributorView(expense: expense)
-                }
+                .buttonStyle(.borderless)
             }
         }
         .padding(.vertical, 8)
+        .sheet(isPresented: $showingAddContributor) {
+            AddContributorView(expense: expense)
+        }
+        .sheet(isPresented: $showingEditExpense) {
+            EditExpenseView(expense: expense)
+        }
     }
 }
 
@@ -260,6 +270,117 @@ struct AddExpenseView: View {
             optOut: optOut
         )
         
+        // Dismiss after a small delay to prevent UI hang
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            presentationMode.wrappedValue.dismiss()
+        }
+    }
+}
+
+struct EditExpenseView: View {
+    @EnvironmentObject var dataStore: DataStore
+    @Environment(\.presentationMode) var presentationMode
+
+    let expense: Expense
+    @State private var description = ""
+    @State private var amount = ""
+    @State private var selectedMember = ""
+    @State private var notes = ""
+    @State private var optOut = false
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+
+    var allMembers: [String] {
+        dataStore.members.map { $0.name }.sorted()
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Expense Details")) {
+                    TextField("Description", text: $description)
+
+                    HStack {
+                        Text("$")
+                        TextField("Amount", text: $amount)
+                            .keyboardType(.decimalPad)
+                    }
+
+                    Picker("Paid By", selection: $selectedMember) {
+                        Text("Select Member").tag("")
+                        ForEach(allMembers, id: \.self) { member in
+                            Text(member).tag(member)
+                        }
+                    }
+
+                    TextField("Notes (optional)", text: $notes)
+                }
+
+                Section {
+                    Toggle("Non-reimbursable expense", isOn: $optOut)
+
+                    if optOut {
+                        Text("This expense won't be included in reimbursements")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Edit Expense")
+            .navigationBarItems(
+                leading: Button("Cancel") {
+                    presentationMode.wrappedValue.dismiss()
+                },
+                trailing: Button("Save") {
+                    updateExpense()
+                }
+                .fontWeight(.bold)
+            )
+            .alert("Error", isPresented: $showingAlert) {
+                Button("OK") { }
+            } message: {
+                Text(alertMessage)
+            }
+        }
+        .onAppear {
+            // Pre-fill with existing expense data
+            description = expense.description
+            amount = "\(expense.amount)"
+            selectedMember = expense.paidBy
+            notes = expense.notes
+            optOut = expense.optOut
+        }
+    }
+
+    private func updateExpense() {
+        guard !description.isEmpty else {
+            alertMessage = "Please enter a description"
+            showingAlert = true
+            return
+        }
+
+        guard let amountValue = Decimal(string: amount), amountValue > 0 else {
+            alertMessage = "Please enter a valid amount"
+            showingAlert = true
+            return
+        }
+
+        guard !selectedMember.isEmpty else {
+            alertMessage = "Please select who paid"
+            showingAlert = true
+            return
+        }
+
+        // Update the expense
+        dataStore.updateExpense(
+            expense,
+            description: description,
+            amount: amountValue,
+            paidBy: selectedMember,
+            notes: notes,
+            optOut: optOut
+        )
+
         // Dismiss after a small delay to prevent UI hang
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             presentationMode.wrappedValue.dismiss()
