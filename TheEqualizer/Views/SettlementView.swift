@@ -25,17 +25,47 @@ struct SettlementView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.green)
-                        
+
                         Text("Everyone is settled up!")
                             .font(.title2)
                             .fontWeight(.semibold)
-                        
+
                         Text("No payments needed")
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.top, 100)
                 } else {
+                    // Treasury Total Card
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "banknote.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Treasury Total")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+
+                                Text("$\(dataStore.totalDonations.asCurrency())")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(.green)
+                            }
+
+                            Spacer()
+                        }
+
+                        Text("Available funds from donations to cover reimbursements")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+
                     // Treasury contributions
                     if !settlements.toContribute.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -149,7 +179,10 @@ struct SettlementView: View {
     private func generateExportText() -> String {
         var text = "THE EQUALIZER - SETTLEMENT REPORT\n"
         text += "Generated: \(Date().formatted(date: .complete, time: .shortened))\n\n"
-        
+
+        text += "TREASURY TOTAL: $\(dataStore.totalDonations.asCurrency())\n"
+        text += "(Available funds from donations to cover reimbursements)\n\n"
+
         text += "SUMMARY\n"
         text += "Total Expenses: $\(dataStore.totalExpenses.asCurrency())\n"
         text += "Reimbursable Expenses: $\(dataStore.reimbursableExpenses.asCurrency())\n"
