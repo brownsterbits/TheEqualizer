@@ -345,7 +345,7 @@ struct EventRowView: View {
                     .foregroundColor(.secondary)
                 
                 if event.totalExpenses > 0 {
-                    Text("$\(event.totalExpenses.formatted())")
+                    Text("$\(event.totalExpenses.asCurrency())")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.purple)

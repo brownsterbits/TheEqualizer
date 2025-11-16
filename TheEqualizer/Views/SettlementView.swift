@@ -151,11 +151,11 @@ struct SettlementView: View {
         text += "Generated: \(Date().formatted(date: .complete, time: .shortened))\n\n"
         
         text += "SUMMARY\n"
-        text += "Total Expenses: $\(dataStore.totalExpenses.formatted())\n"
-        text += "Reimbursable Expenses: $\(dataStore.reimbursableExpenses.formatted())\n"
-        text += "Treasury Donations: $\(dataStore.totalDonations.formatted())\n"
-        text += "Direct Donations: $\(dataStore.directContributions.formatted())\n"
-        text += "Share per Contributing Member: $\(dataStore.sharePerPerson.formatted())\n\n"
+        text += "Total Expenses: $\(dataStore.totalExpenses.asCurrency())\n"
+        text += "Reimbursable Expenses: $\(dataStore.reimbursableExpenses.asCurrency())\n"
+        text += "Treasury Donations: $\(dataStore.totalDonations.asCurrency())\n"
+        text += "Direct Donations: $\(dataStore.directContributions.asCurrency())\n"
+        text += "Share per Contributing Member: $\(dataStore.sharePerPerson.asCurrency())\n\n"
         
         if !settlements.toContribute.isEmpty {
             text += "CONTRIBUTE TO TREASURY:\n"

@@ -51,7 +51,7 @@ struct SummaryView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text("$\(dataStore.totalDonations.formatted())")
+                        Text("$\(dataStore.totalDonations.asCurrency())")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.green)
@@ -91,7 +91,7 @@ struct SummaryView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text("$\(dataStore.sharePerPerson.formatted())")
+                        Text("$\(dataStore.sharePerPerson.asCurrency())")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.purple)
@@ -156,7 +156,7 @@ struct SummaryCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            Text("$\(amount.formatted())")
+            Text("$\(amount.asCurrency())")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(color)
@@ -204,12 +204,12 @@ struct MemberBalanceRow: View {
                 }
                 
                 HStack(spacing: 12) {
-                    Label("\(getPaidAmount().formatted())", systemImage: "creditcard")
+                    Label("\(getPaidAmount().asCurrency())", systemImage: "creditcard")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     if member.type == .contributing {
-                        Label("\(dataStore.sharePerPerson.formatted())", systemImage: "equal.circle")
+                        Label("\(dataStore.sharePerPerson.asCurrency())", systemImage: "equal.circle")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -223,7 +223,7 @@ struct MemberBalanceRow: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("$\(abs(balance).formatted())")
+                Text("$\(abs(balance).asCurrency())")
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(balanceColor)

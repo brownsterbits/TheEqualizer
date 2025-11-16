@@ -90,13 +90,13 @@ struct ExpenseRowView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("$\(expense.amount.formatted())")
+                    Text("$\(expense.amount.asCurrency())")
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.purple)
-                    
+
                     if expense.totalContributions > 0 {
-                        Text("Net: $\(expense.remainingAmount.formatted())")
+                        Text("Net: $\(expense.remainingAmount.asCurrency())")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -113,7 +113,7 @@ struct ExpenseRowView: View {
                     
                     ForEach(expense.contributors) { contributor in
                         HStack {
-                            Text("\(contributor.name): $\(contributor.amount.formatted())")
+                            Text("\(contributor.name): $\(contributor.amount.asCurrency())")
                                 .font(.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -304,7 +304,7 @@ struct AddContributorView: View {
                             .keyboardType(.decimalPad)
                     }
                     
-                    Text("Maximum: $\(expense.remainingAmount.formatted())")
+                    Text("Maximum: $\(expense.remainingAmount.asCurrency())")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

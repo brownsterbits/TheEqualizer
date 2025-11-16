@@ -70,8 +70,8 @@ struct DonationRowView: View {
             }
             
             Spacer()
-            
-            Text("$\(donation.amount.formatted())")
+
+            Text("$\(donation.amount.asCurrency())")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.green)
