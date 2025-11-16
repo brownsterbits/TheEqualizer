@@ -115,19 +115,24 @@ class DataStore: ObservableObject {
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             // Run Firebase sync on background thread to avoid blocking UI
             Task.detached { [weak self] in
+                guard let self = self else { return }
+
                 await MainActor.run {
-                    self?.isFirebaseConnected = user != nil
+                    self.isFirebaseConnected = user != nil
                 }
 
                 if user != nil {
                     // Sync for Pro users or if we have a shared event
-                    if await self?.isPro == true {
-                        await self?.syncWithFirebase()
-                    } else if let currentEvent = await self?.currentEvent,
-                             currentEvent.firebaseId != nil {
-                        // Non-Pro user with a shared event - set up listener
-                        await MainActor.run {
-                            self?.setupEventListener(firebaseId: currentEvent.firebaseId!)
+                    let isPro = await self.isPro
+                    if isPro {
+                        await self.syncWithFirebase()
+                    } else {
+                        let currentEvent = await self.currentEvent
+                        if let firebaseId = currentEvent?.firebaseId {
+                            // Non-Pro user with a shared event - set up listener
+                            await MainActor.run {
+                                self.setupEventListener(firebaseId: firebaseId)
+                            }
                         }
                     }
                 }

@@ -113,11 +113,15 @@ class SubscriptionManager: ObservableObject {
             }
         }
 
+        // Capture immutable copies for Swift 6 strict concurrency
+        let finalIsActive = isActive
+        let finalProductId = currentProductId
+
         // Only hop to MainActor when updating @Published properties
-        await MainActor.run {
-            self.isProUser = isActive
-            self.currentSubscription = currentProductId
-            self.subscriptionStatus = isActive ? .subscribed : .notSubscribed
+        await MainActor.run { [finalIsActive, finalProductId] in
+            self.isProUser = finalIsActive
+            self.currentSubscription = finalProductId
+            self.subscriptionStatus = finalIsActive ? .subscribed : .notSubscribed
         }
     }
     
