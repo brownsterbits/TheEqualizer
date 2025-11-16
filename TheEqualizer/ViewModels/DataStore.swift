@@ -90,14 +90,22 @@ class DataStore: ObservableObject {
     init() {
         firebaseService = FirebaseService()
         loadData()
-        
+
         // Debug: Try to repair missing events on init
         if isPro {
             repairMissingEvents()
         }
-        
+
         // Setup Firebase auth listener
         setupFirebaseListener()
+
+        // Proactively set up event listener if we have a current event with Firebase ID
+        // This ensures real-time updates work immediately without waiting for auth state callbacks
+        if firebaseService.isAuthenticated,
+           let currentEvent = currentEvent,
+           let firebaseId = currentEvent.firebaseId {
+            setupEventListener(firebaseId: firebaseId)
+        }
     }
     
     // MARK: - Firebase Integration
