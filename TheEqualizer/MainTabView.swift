@@ -10,7 +10,7 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             // Events tab - show for all users (Free users can create one event)
             NavigationView {
-                EventsListView()
+                EventsListView(selectedTab: $selectedTab)
                     .id("EventsListView-\(subscriptionManager.isProUser)")
             }
             .navigationViewStyle(StackNavigationViewStyle())

@@ -4,6 +4,7 @@ struct EventsListView: View {
     @EnvironmentObject var dataStore: DataStore
     @EnvironmentObject var firebaseService: FirebaseService
     @EnvironmentObject var subscriptionManager: SubscriptionManager
+    @Binding var selectedTab: Int
     @State private var showingCreateEvent = false
     @State private var showingDeleteAlert = false
     @State private var eventToDelete: Event?
@@ -21,6 +22,9 @@ struct EventsListView: View {
                 Section {
                     if let currentEvent = dataStore.currentEvent {
                         EventRowView(event: currentEvent, isCurrent: true)
+                            .onTapGesture {
+                                selectedTab = 4  // Navigate to Summary tab
+                            }
                     } else {
                         Button(action: { showingCreateEvent = true }) {
                             HStack {
@@ -132,6 +136,7 @@ struct EventsListView: View {
                         }
                         .onTapGesture {
                             dataStore.selectEvent(event)
+                            selectedTab = 4  // Navigate to Summary tab
                         }
                     }
                     
