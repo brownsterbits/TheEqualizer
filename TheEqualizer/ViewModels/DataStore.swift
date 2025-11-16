@@ -684,21 +684,19 @@ class DataStore: ObservableObject {
     // MARK: - Member Management
     
     func addMember(name: String, type: MemberType) {
-        guard currentEvent != nil else { return }
-        
+        guard var event = currentEvent else { return }
+
         let member = Member(name: name, type: type)
-        currentEvent?.members.append(member)
-        currentEvent?.lastModified = Date()
+        event.members.append(member)
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Save locally immediately - this ensures UI persistence
         saveData()
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -706,31 +704,27 @@ class DataStore: ObservableObject {
     }
     
     func removeMember(_ member: Member) {
-        guard currentEvent != nil else { return }
-        
-        currentEvent?.members.removeAll { $0.id == member.id }
-        
+        guard var event = currentEvent else { return }
+
+        event.members.removeAll { $0.id == member.id }
+
         // Remove expenses paid by this member
-        currentEvent?.expenses.removeAll { $0.paidBy == member.name }
-        
+        event.expenses.removeAll { $0.paidBy == member.name }
+
         // Remove contributions made by this member
-        if let expenses = currentEvent?.expenses {
-            for i in expenses.indices {
-                currentEvent?.expenses[i].contributors.removeAll { $0.name == member.name }
-            }
+        for i in event.expenses.indices {
+            event.expenses[i].contributors.removeAll { $0.name == member.name }
         }
-        
-        currentEvent?.lastModified = Date()
+
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -744,8 +738,8 @@ class DataStore: ObservableObject {
     // MARK: - Expense Management
     
     func addExpense(description: String, amount: Decimal, paidBy: String, notes: String, optOut: Bool) {
-        guard currentEvent != nil else { return }
-        
+        guard var event = currentEvent else { return }
+
         let expense = Expense(
             description: description,
             amount: amount,
@@ -753,18 +747,18 @@ class DataStore: ObservableObject {
             notes: notes,
             optOut: optOut
         )
-        currentEvent?.expenses.append(expense)
-        currentEvent?.lastModified = Date()
+
+        // Modify the copy
+        event.expenses.append(expense)
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Save locally immediately
         saveData()
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -772,20 +766,18 @@ class DataStore: ObservableObject {
     }
     
     func removeExpense(_ expense: Expense) {
-        guard currentEvent != nil else { return }
-        
-        currentEvent?.expenses.removeAll { $0.id == expense.id }
-        currentEvent?.lastModified = Date()
+        guard var event = currentEvent else { return }
+
+        event.expenses.removeAll { $0.id == expense.id }
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -793,22 +785,20 @@ class DataStore: ObservableObject {
     }
     
     func addContributor(to expense: Expense, name: String, amount: Decimal) {
-        guard let eventExpenses = currentEvent?.expenses,
-              let index = eventExpenses.firstIndex(where: { $0.id == expense.id }) else { return }
-        
+        guard var event = currentEvent,
+              let index = event.expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+
         let contributor = Contributor(name: name, amount: amount)
-        currentEvent?.expenses[index].contributors.append(contributor)
-        currentEvent?.lastModified = Date()
+        event.expenses[index].contributors.append(contributor)
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -816,21 +806,19 @@ class DataStore: ObservableObject {
     }
     
     func removeContributor(from expense: Expense, contributor: Contributor) {
-        guard let eventExpenses = currentEvent?.expenses,
-              let index = eventExpenses.firstIndex(where: { $0.id == expense.id }) else { return }
-        
-        currentEvent?.expenses[index].contributors.removeAll { $0.id == contributor.id }
-        currentEvent?.lastModified = Date()
+        guard var event = currentEvent,
+              let index = event.expenses.firstIndex(where: { $0.id == expense.id }) else { return }
+
+        event.expenses[index].contributors.removeAll { $0.id == contributor.id }
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -840,21 +828,19 @@ class DataStore: ObservableObject {
     // MARK: - Donation Management
     
     func addDonation(amount: Decimal, notes: String) {
-        guard currentEvent != nil else { return }
-        
+        guard var event = currentEvent else { return }
+
         let donation = Donation(amount: amount, notes: notes)
-        currentEvent?.donations.append(donation)
-        currentEvent?.lastModified = Date()
+        event.donations.append(donation)
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
@@ -862,20 +848,18 @@ class DataStore: ObservableObject {
     }
     
     func removeDonation(_ donation: Donation) {
-        guard currentEvent != nil else { return }
-        
-        currentEvent?.donations.removeAll { $0.id == donation.id }
-        currentEvent?.lastModified = Date()
+        guard var event = currentEvent else { return }
+
+        event.donations.removeAll { $0.id == donation.id }
+        event.lastModified = Date()
+
+        // Reassign to trigger @Published
+        currentEvent = event
         hasUnsavedChanges = true
-        
+
         // Save locally immediately
         saveData()
-        
-        // Trigger SwiftUI update by reassigning currentEvent
-        if let event = currentEvent {
-            currentEvent = event
-        }
-        
+
         // Sync to Firebase in background if authenticated and (Pro or shared event)
         if firebaseService.isAuthenticated && (isPro || currentEvent?.firebaseId != nil) {
             saveToFirebase()
