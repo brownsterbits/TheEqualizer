@@ -296,6 +296,43 @@ await firebaseService.saveExpense(...)  // Freezes UI on slow network
 4. Confirm subcollection permissions propagate correctly
 5. See `FIREBASE_RULES.md` for current production rules
 
+## App Store Submission
+
+### Current Status (2025-01-16)
+**Version 1.3 (Build 3)** - ✅ Submitted to App Store, awaiting review
+
+**Monetization Model**: Free app with in-app subscriptions (freemium)
+- **Free Tier**: 1 event limit, local storage only, all core features
+- **Pro Monthly**: $1.99/month - Unlimited events, cloud sync, sharing
+- **Pro Annual**: $19.99/year - Same as monthly, save 17%
+
+**App Store Assets**:
+- Marketing Landing Page: https://brownsterbits.github.io/TheEqualizer/
+- Help & FAQ: https://brownsterbits.github.io/TheEqualizer/help.html
+- Privacy Policy: https://brownsterbits.github.io/TheEqualizer/privacy.html
+- Terms of Service: https://brownsterbits.github.io/TheEqualizer/terms.html
+
+**Subscription Screenshots**:
+- Located in `Screenshots/` folder
+- 1024x1024 PNG, 72 dpi, RGB, no rounded corners
+- Uses brand colors: #C026D3 (magenta), #A855F7 (purple)
+
+**Documentation**:
+- **`APP_STORE_SUBMISSION_GUIDE.md`** - Complete submission process (monetization, export compliance, review instructions, troubleshooting)
+- **`APP_STORE_LISTING.md`** - App Store copy (name, subtitle, description, keywords)
+- **`APP_STORE_DESCRIPTION_CLEAN.txt`** - Description with special characters removed for App Store Connect
+
+**Export Compliance**: Standard encryption only (HTTPS/TLS), France excluded from initial distribution
+
+**App Review**: No login required for testing - free tier works completely offline
+
+### For Future Submissions
+- Update version and build numbers
+- Update copyright year if needed
+- Test on iPhone SE, iPhone 16, iPhone 16 Pro Max
+- Review seasonal promotional text opportunities
+- See `APP_STORE_SUBMISSION_GUIDE.md` for complete checklist
+
 ## Resources
 
 - [Firebase iOS Documentation](https://firebase.google.com/docs/ios/setup)
@@ -303,6 +340,7 @@ await firebaseService.saveExpense(...)  // Freezes UI on slow network
 - [Sign in with Apple](https://developer.apple.com/documentation/sign_in_with_apple)
 - [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui)
 - [StoreKit 2 Documentation](https://developer.apple.com/documentation/storekit)
+- [App Store Connect](https://appstoreconnect.apple.com)
 
 ## Git Workflow
 - Main branch: `main` (production-ready code)

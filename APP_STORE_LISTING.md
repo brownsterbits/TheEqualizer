@@ -2,6 +2,10 @@
 
 **Last Updated:** 2025-01-16
 **App Version:** 1.3 (Build 3)
+**Submission Status:** ✅ Submitted to App Store, awaiting review
+
+> **📘 For complete submission process documentation, see `APP_STORE_SUBMISSION_GUIDE.md`**
+> Includes: monetization setup, export compliance, review instructions, developer branding, troubleshooting
 
 ---
 
@@ -185,11 +189,25 @@ Group vacation coming up? Split costs fairly, track who paid what, accept donati
 ## Version History
 
 ### Version 1.3 (Build 3) - 2025-01-16
-- Added Help & FAQ page
+**Status:** ✅ Submitted to App Store, awaiting review
+
+**Changes:**
+- Added Help & FAQ page (https://brownsterbits.github.io/TheEqualizer/help.html)
 - Fixed expense interaction bugs (edit/delete/add direct donations)
-- Improved Picker validation
+- Improved Picker validation timing
 - Fixed navigation staying on current page after edits
-- Initial App Store listing created
+- Updated copyright to "© 2025 Brownster Bits"
+- Created marketing landing page
+- Created subscription review screenshots (1024x1024)
+- Completed export compliance documentation
+- Initial App Store submission
+
+**Submission Details:**
+- App Price: $0.00 (Free - freemium model)
+- Subscriptions: Pro Monthly ($1.99/month), Pro Annual ($19.99/year)
+- Export Compliance: Completed (standard encryption only, France excluded)
+- App Review: Testing instructions provided (no login required)
+- Submission Date: 2025-01-16
 
 ### Version 1.2 (Build 2) - 2025-01-15
 - Previous version details...

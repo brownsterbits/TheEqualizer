@@ -1,0 +1,58 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C026D3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A855F7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C026D3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A855F7;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="url(#bgGradient)"/>
+
+  <!-- White Card Container -->
+  <rect x="112" y="112" width="800" height="800" rx="0" fill="white" filter="url(#shadow)"/>
+
+  <!-- App Icon (centered at top) -->
+  <rect x="412" y="172" width="200" height="200" rx="44" fill="url(#bgGradient)"/>
+  <text x="512" y="300" font-family="-apple-system, Arial, sans-serif" font-size="120" font-weight="bold" fill="white" text-anchor="middle">=</text>
+
+  <!-- Title -->
+  <text x="512" y="445" font-family="-apple-system, Arial, sans-serif" font-size="52" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Pro Monthly</text>
+
+  <!-- Subtitle -->
+  <text x="512" y="495" font-family="-apple-system, Arial, sans-serif" font-size="26" fill="#666666" text-anchor="middle">Unlock Full Access</text>
+
+  <!-- Price -->
+  <text x="512" y="590" font-family="-apple-system, Arial, sans-serif" font-size="80" font-weight="bold" fill="url(#textGradient)" text-anchor="middle">$1.99</text>
+
+  <!-- Period -->
+  <text x="512" y="635" font-family="-apple-system, Arial, sans-serif" font-size="28" fill="#666666" text-anchor="middle">per month</text>
+
+  <!-- Feature 1 -->
+  <circle cx="180" cy="710" r="18" fill="url(#bgGradient)"/>
+  <text x="196" y="718" font-family="-apple-system, Arial, sans-serif" font-size="16" font-weight="bold" fill="white">✓</text>
+  <text x="225" y="718" font-family="-apple-system, Arial, sans-serif" font-size="26" font-weight="500" fill="#1a1a1a">Unlimited Events</text>
+
+  <!-- Feature 2 -->
+  <circle cx="180" cy="765" r="18" fill="url(#bgGradient)"/>
+  <text x="196" y="773" font-family="-apple-system, Arial, sans-serif" font-size="16" font-weight="bold" fill="white">✓</text>
+  <text x="225" y="773" font-family="-apple-system, Arial, sans-serif" font-size="26" font-weight="500" fill="#1a1a1a">Cloud Sync Across Devices</text>
+
+  <!-- Feature 3 -->
+  <circle cx="180" cy="820" r="18" fill="url(#bgGradient)"/>
+  <text x="196" y="828" font-family="-apple-system, Arial, sans-serif" font-size="16" font-weight="bold" fill="white">✓</text>
+  <text x="225" y="828" font-family="-apple-system, Arial, sans-serif" font-size="26" font-weight="500" fill="#1a1a1a">Share with Invite Codes</text>
+
+  <!-- Feature 4 -->
+  <circle cx="180" cy="875" r="18" fill="url(#bgGradient)"/>
+  <text x="196" y="883" font-family="-apple-system, Arial, sans-serif" font-size="16" font-weight="bold" fill="white">✓</text>
+  <text x="225" y="883" font-family="-apple-system, Arial, sans-serif" font-size="26" font-weight="500" fill="#1a1a1a">Real-Time Updates</text>
+</svg>
