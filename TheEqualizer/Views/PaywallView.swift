@@ -5,6 +5,7 @@ struct PaywallView: View {
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @Environment(\.dismiss) var dismiss
     @State private var selectedProduct: Product?
+    @State private var selectedProductId: String? // Fallback selection when products haven't loaded
     @State private var isPurchasing = false
     
     var body: some View {
@@ -58,6 +59,7 @@ struct PaywallView: View {
                     
                     // Subscription Options
                     VStack(spacing: 12) {
+                        // Monthly option - show even if product hasn't loaded
                         if let monthly = subscriptionManager.monthlyProduct {
                             SubscriptionOptionCard(
                                 product: monthly,
@@ -66,8 +68,20 @@ struct PaywallView: View {
                             ) {
                                 selectedProduct = monthly
                             }
+                        } else {
+                            // Fallback UI when products haven't loaded
+                            SubscriptionPlaceholderCard(
+                                title: "Pro Monthly",
+                                description: "Billed monthly",
+                                price: "$1.99/month",
+                                isSelected: selectedProductId == "pro_monthly",
+                                badge: nil
+                            ) {
+                                selectedProductId = "pro_monthly"
+                            }
                         }
-                        
+
+                        // Yearly option - show even if product hasn't loaded
                         if let yearly = subscriptionManager.yearlyProduct {
                             SubscriptionOptionCard(
                                 product: yearly,
@@ -76,6 +90,25 @@ struct PaywallView: View {
                             ) {
                                 selectedProduct = yearly
                             }
+                        } else {
+                            // Fallback UI when products haven't loaded
+                            SubscriptionPlaceholderCard(
+                                title: "Pro Yearly",
+                                description: "Billed annually",
+                                price: "$19.99/year",
+                                isSelected: selectedProductId == "pro_yearly",
+                                badge: "SAVE 17%"
+                            ) {
+                                selectedProductId = "pro_yearly"
+                            }
+                        }
+
+                        // Show loading indicator if products are still loading
+                        if subscriptionManager.monthlyProduct == nil && subscriptionManager.yearlyProduct == nil {
+                            Text("Loading subscription details...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
                         }
                     }
                     .padding(.horizontal)
@@ -94,12 +127,12 @@ struct PaywallView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(selectedProduct != nil ? Color.purple : Color.gray)
+                        .background(hasSelection ? Color.purple : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
                     .padding(.horizontal)
-                    .disabled(selectedProduct == nil || isPurchasing)
+                    .disabled(!hasSelection || isPurchasing)
                     
                     // Terms
                     VStack(spacing: 8) {
@@ -138,14 +171,43 @@ struct PaywallView: View {
         }
     }
     
+    // Check if user has made a selection (either real product or fallback)
+    private var hasSelection: Bool {
+        selectedProduct != nil || selectedProductId != nil
+    }
+
     private func purchase() {
-        guard let product = selectedProduct else { return }
-        
         isPurchasing = true
+
         Task {
-            await subscriptionManager.purchase(product)
+            // Try to get the actual product - either from direct selection or by looking up the fallback ID
+            var productToPurchase: Product? = selectedProduct
+
+            if productToPurchase == nil, let productId = selectedProductId {
+                // Fallback was selected - try to load the product now
+                if productId == "pro_monthly" {
+                    productToPurchase = subscriptionManager.monthlyProduct
+                } else if productId == "pro_yearly" {
+                    productToPurchase = subscriptionManager.yearlyProduct
+                }
+
+                // If still nil, try loading products one more time
+                if productToPurchase == nil {
+                    await subscriptionManager.loadProducts()
+                    if productId == "pro_monthly" {
+                        productToPurchase = subscriptionManager.monthlyProduct
+                    } else if productId == "pro_yearly" {
+                        productToPurchase = subscriptionManager.yearlyProduct
+                    }
+                }
+            }
+
+            if let product = productToPurchase {
+                await subscriptionManager.purchase(product)
+            }
+
             isPurchasing = false
-            
+
             if subscriptionManager.isProUser {
                 dismiss()
             }
@@ -212,6 +274,58 @@ struct SubscriptionOptionCard: View {
                 Spacer()
                 
                 Text(product.displayPrice)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+            }
+            .padding()
+            .background(isSelected ? Color.purple.opacity(0.1) : Color.gray.opacity(0.1))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.purple : Color.clear, lineWidth: 2)
+            )
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// Fallback card shown when StoreKit products haven't loaded yet
+struct SubscriptionPlaceholderCard: View {
+    let title: String
+    let description: String
+    let price: String
+    let isSelected: Bool
+    let badge: String?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(title)
+                            .font(.headline)
+
+                        if let badge = badge {
+                            Text(badge)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(4)
+                        }
+                    }
+
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Text(price)
                     .font(.title3)
                     .fontWeight(.semibold)
             }
