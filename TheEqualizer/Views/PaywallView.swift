@@ -4,8 +4,7 @@ import StoreKit
 struct PaywallView: View {
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @Environment(\.dismiss) var dismiss
-    @State private var selectedProduct: Product?
-    @State private var selectedProductId: String? // Fallback selection when products haven't loaded
+    @State private var selectedProductId: String = "pro_monthly" // Default to monthly - ALWAYS have selection
     @State private var isPurchasing = false
     
     var body: some View {
@@ -63,10 +62,10 @@ struct PaywallView: View {
                         if let monthly = subscriptionManager.monthlyProduct {
                             SubscriptionOptionCard(
                                 product: monthly,
-                                isSelected: selectedProduct?.id == monthly.id,
+                                isSelected: selectedProductId == "pro_monthly",
                                 badge: nil
                             ) {
-                                selectedProduct = monthly
+                                selectedProductId = "pro_monthly"
                             }
                         } else {
                             // Fallback UI when products haven't loaded
@@ -85,10 +84,10 @@ struct PaywallView: View {
                         if let yearly = subscriptionManager.yearlyProduct {
                             SubscriptionOptionCard(
                                 product: yearly,
-                                isSelected: selectedProduct?.id == yearly.id,
+                                isSelected: selectedProductId == "pro_yearly",
                                 badge: "SAVE 17%"
                             ) {
-                                selectedProduct = yearly
+                                selectedProductId = "pro_yearly"
                             }
                         } else {
                             // Fallback UI when products haven't loaded
@@ -102,18 +101,10 @@ struct PaywallView: View {
                                 selectedProductId = "pro_yearly"
                             }
                         }
-
-                        // Show loading indicator if products are still loading
-                        if subscriptionManager.monthlyProduct == nil && subscriptionManager.yearlyProduct == nil {
-                            Text("Loading subscription details...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                        }
                     }
                     .padding(.horizontal)
                     
-                    // Purchase Button
+                    // Purchase Button - always enabled since we always have a default selection
                     Button(action: purchase) {
                         HStack {
                             if isPurchasing {
@@ -127,12 +118,12 @@ struct PaywallView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(hasSelection ? Color.purple : Color.gray)
+                        .background(Color.purple)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
                     .padding(.horizontal)
-                    .disabled(!hasSelection || isPurchasing)
+                    .disabled(isPurchasing)
                     
                     // Terms
                     VStack(spacing: 8) {
@@ -171,35 +162,21 @@ struct PaywallView: View {
         }
     }
     
-    // Check if user has made a selection (either real product or fallback)
-    private var hasSelection: Bool {
-        selectedProduct != nil || selectedProductId != nil
-    }
-
     private func purchase() {
         isPurchasing = true
 
         Task {
-            // Try to get the actual product - either from direct selection or by looking up the fallback ID
-            var productToPurchase: Product? = selectedProduct
+            // Look up the product by selectedProductId
+            var productToPurchase: Product? = selectedProductId == "pro_monthly"
+                ? subscriptionManager.monthlyProduct
+                : subscriptionManager.yearlyProduct
 
-            if productToPurchase == nil, let productId = selectedProductId {
-                // Fallback was selected - try to load the product now
-                if productId == "pro_monthly" {
-                    productToPurchase = subscriptionManager.monthlyProduct
-                } else if productId == "pro_yearly" {
-                    productToPurchase = subscriptionManager.yearlyProduct
-                }
-
-                // If still nil, try loading products one more time
-                if productToPurchase == nil {
-                    await subscriptionManager.loadProducts()
-                    if productId == "pro_monthly" {
-                        productToPurchase = subscriptionManager.monthlyProduct
-                    } else if productId == "pro_yearly" {
-                        productToPurchase = subscriptionManager.yearlyProduct
-                    }
-                }
+            // If product not loaded yet, try loading now
+            if productToPurchase == nil {
+                await subscriptionManager.loadProducts()
+                productToPurchase = selectedProductId == "pro_monthly"
+                    ? subscriptionManager.monthlyProduct
+                    : subscriptionManager.yearlyProduct
             }
 
             if let product = productToPurchase {
