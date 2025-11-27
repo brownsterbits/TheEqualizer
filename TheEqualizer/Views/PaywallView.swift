@@ -6,6 +6,8 @@ struct PaywallView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selectedProductId: String = "pro_monthly" // Default to monthly - ALWAYS have selection
     @State private var isPurchasing = false
+    @State private var showingError = false
+    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
@@ -159,6 +161,11 @@ struct PaywallView: View {
                     }
                 }
             }
+            .alert("Purchase Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
     
@@ -181,6 +188,16 @@ struct PaywallView: View {
 
             if let product = productToPurchase {
                 await subscriptionManager.purchase(product)
+
+                // Check if purchase failed
+                if subscriptionManager.subscriptionStatus == .failed {
+                    errorMessage = "Unable to complete purchase. Please try again."
+                    showingError = true
+                }
+            } else {
+                // Products couldn't be loaded - show error to user
+                errorMessage = "Unable to connect to the App Store. Please check your internet connection and try again."
+                showingError = true
             }
 
             isPurchasing = false
