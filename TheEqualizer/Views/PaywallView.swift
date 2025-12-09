@@ -8,6 +8,8 @@ struct PaywallView: View {
     @State private var isPurchasing = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var showingSuccess = false
+    @State private var showingPending = false
     
     var body: some View {
         NavigationView {
@@ -166,7 +168,44 @@ struct PaywallView: View {
             } message: {
                 Text(errorMessage)
             }
+            .alert("Purchase Pending", isPresented: $showingPending) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your purchase is pending approval. Once approved, your Pro subscription will activate automatically.")
+            }
+            .overlay {
+                if showingSuccess {
+                    // Success overlay - shows checkmark before dismissing
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 20) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 80))
+                                .foregroundColor(.green)
+
+                            Text("Welcome to Pro!")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+
+                            Text("Your subscription is now active")
+                                .font(.body)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .padding(40)
+                        .background(Color(.systemBackground).opacity(0.95))
+                        .cornerRadius(20)
+                        .shadow(radius: 20)
+                    }
+                    .transition(.opacity)
+                }
+            }
         }
+        .navigationViewStyle(.stack) // Prevents iPad split view issues in sheets
+        .presentationDetents([.large]) // Ensure full height on iPad
+        .presentationDragIndicator(.visible) // Show drag indicator for clarity
     }
     
     private func purchase() {
@@ -187,23 +226,37 @@ struct PaywallView: View {
             }
 
             if let product = productToPurchase {
-                await subscriptionManager.purchase(product)
+                let result = await subscriptionManager.purchaseWithResult(product)
 
-                // Check if purchase failed
-                if subscriptionManager.subscriptionStatus == .failed {
+                isPurchasing = false
+
+                switch result {
+                case .success:
+                    // Show success animation before dismissing
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingSuccess = true
+                    }
+                    // Wait for user to see success message, then dismiss
+                    try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                    dismiss()
+
+                case .pending:
+                    // User needs parental approval (Ask to Buy) or other pending state
+                    showingPending = true
+
+                case .cancelled:
+                    // User cancelled - no action needed, they can try again
+                    break
+
+                case .failed:
                     errorMessage = "Unable to complete purchase. Please try again."
                     showingError = true
                 }
             } else {
                 // Products couldn't be loaded - show error to user
+                isPurchasing = false
                 errorMessage = "Unable to connect to the App Store. Please check your internet connection and try again."
                 showingError = true
-            }
-
-            isPurchasing = false
-
-            if subscriptionManager.isProUser {
-                dismiss()
             }
         }
     }

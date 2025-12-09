@@ -19,6 +19,13 @@ class SubscriptionManager: ObservableObject {
         case failed
     }
 
+    enum PurchaseResult {
+        case success
+        case pending
+        case cancelled
+        case failed
+    }
+
     init() {
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
@@ -53,8 +60,12 @@ class SubscriptionManager: ObservableObject {
     }
     
     // MARK: - Purchase
-    
+
     func purchase(_ product: Product) async {
+        _ = await purchaseWithResult(product)
+    }
+
+    func purchaseWithResult(_ product: Product) async -> PurchaseResult {
         await MainActor.run {
             self.subscriptionStatus = .pending
         }
@@ -67,26 +78,31 @@ class SubscriptionManager: ObservableObject {
                 let transaction = try checkVerified(verification)
                 await updateSubscriptionStatus(for: transaction)
                 await transaction.finish()
+                return .success
 
             case .userCancelled:
                 await MainActor.run {
                     self.subscriptionStatus = .notSubscribed
                 }
+                return .cancelled
 
             case .pending:
                 await MainActor.run {
-                    self.subscriptionStatus = .notSubscribed
+                    self.subscriptionStatus = .pending
                 }
+                return .pending
 
             @unknown default:
                 await MainActor.run {
                     self.subscriptionStatus = .failed
                 }
+                return .failed
             }
         } catch {
             await MainActor.run {
                 self.subscriptionStatus = .failed
             }
+            return .failed
         }
     }
     
