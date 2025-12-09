@@ -95,7 +95,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "pro_monthly",
+          "productID" : "com.brownsterbits.theequalizer.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Pro Monthly",
           "subscriptionGroupID" : "CA432A8D",
@@ -123,7 +123,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "pro_yearly",
+          "productID" : "com.brownsterbits.theequalizer.pro.annual",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Pro Yearly",
           "subscriptionGroupID" : "CA432A8D",

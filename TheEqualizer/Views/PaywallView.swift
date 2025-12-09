@@ -4,12 +4,13 @@ import StoreKit
 struct PaywallView: View {
     @EnvironmentObject var subscriptionManager: SubscriptionManager
     @Environment(\.dismiss) var dismiss
-    @State private var selectedProductId: String = "pro_monthly" // Default to monthly - ALWAYS have selection
+    @State private var selectedProductId: String = "com.brownsterbits.theequalizer.pro.monthly" // Default to monthly - ALWAYS have selection
     @State private var isPurchasing = false
     @State private var showingError = false
     @State private var errorMessage = ""
     @State private var showingSuccess = false
     @State private var showingPending = false
+    @State private var isLoadingProducts = false
     
     var body: some View {
         NavigationView {
@@ -62,47 +63,79 @@ struct PaywallView: View {
                     
                     // Subscription Options
                     VStack(spacing: 12) {
-                        // Monthly option - show even if product hasn't loaded
-                        if let monthly = subscriptionManager.monthlyProduct {
-                            SubscriptionOptionCard(
-                                product: monthly,
-                                isSelected: selectedProductId == "pro_monthly",
-                                badge: nil
-                            ) {
-                                selectedProductId = "pro_monthly"
+                        if isLoadingProducts {
+                            // Loading state
+                            HStack {
+                                ProgressView()
+                                Text("Loading subscription options...")
+                                    .foregroundColor(.secondary)
                             }
+                            .frame(height: 120)
+                        } else if subscriptionManager.productLoadError != nil && !subscriptionManager.hasProducts {
+                            // Error state with retry
+                            VStack(spacing: 12) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.orange)
+                                Text("Unable to load subscription options")
+                                    .font(.headline)
+                                Text("Please check your internet connection")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Button("Try Again") {
+                                    Task {
+                                        isLoadingProducts = true
+                                        await subscriptionManager.loadProducts()
+                                        isLoadingProducts = false
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.purple)
+                            }
+                            .frame(height: 160)
                         } else {
-                            // Fallback UI when products haven't loaded
-                            SubscriptionPlaceholderCard(
-                                title: "Pro Monthly",
-                                description: "Billed monthly",
-                                price: "$1.99/month",
-                                isSelected: selectedProductId == "pro_monthly",
-                                badge: nil
-                            ) {
-                                selectedProductId = "pro_monthly"
+                            // Monthly option - show even if product hasn't loaded
+                            if let monthly = subscriptionManager.monthlyProduct {
+                                SubscriptionOptionCard(
+                                    product: monthly,
+                                    isSelected: selectedProductId == "com.brownsterbits.theequalizer.pro.monthly",
+                                    badge: nil
+                                ) {
+                                    selectedProductId = "com.brownsterbits.theequalizer.pro.monthly"
+                                }
+                            } else {
+                                // Fallback UI when products haven't loaded
+                                SubscriptionPlaceholderCard(
+                                    title: "Pro Monthly",
+                                    description: "Billed monthly",
+                                    price: "$1.99/month",
+                                    isSelected: selectedProductId == "com.brownsterbits.theequalizer.pro.monthly",
+                                    badge: nil
+                                ) {
+                                    selectedProductId = "com.brownsterbits.theequalizer.pro.monthly"
+                                }
                             }
-                        }
 
-                        // Yearly option - show even if product hasn't loaded
-                        if let yearly = subscriptionManager.yearlyProduct {
-                            SubscriptionOptionCard(
-                                product: yearly,
-                                isSelected: selectedProductId == "pro_yearly",
-                                badge: "SAVE 17%"
-                            ) {
-                                selectedProductId = "pro_yearly"
-                            }
-                        } else {
-                            // Fallback UI when products haven't loaded
-                            SubscriptionPlaceholderCard(
-                                title: "Pro Yearly",
-                                description: "Billed annually",
-                                price: "$19.99/year",
-                                isSelected: selectedProductId == "pro_yearly",
-                                badge: "SAVE 17%"
-                            ) {
-                                selectedProductId = "pro_yearly"
+                            // Yearly option - show even if product hasn't loaded
+                            if let yearly = subscriptionManager.yearlyProduct {
+                                SubscriptionOptionCard(
+                                    product: yearly,
+                                    isSelected: selectedProductId == "com.brownsterbits.theequalizer.pro.annual",
+                                    badge: "SAVE 17%"
+                                ) {
+                                    selectedProductId = "com.brownsterbits.theequalizer.pro.annual"
+                                }
+                            } else {
+                                // Fallback UI when products haven't loaded
+                                SubscriptionPlaceholderCard(
+                                    title: "Pro Yearly",
+                                    description: "Billed annually",
+                                    price: "$19.99/year",
+                                    isSelected: selectedProductId == "com.brownsterbits.theequalizer.pro.annual",
+                                    badge: "SAVE 17%"
+                                ) {
+                                    selectedProductId = "com.brownsterbits.theequalizer.pro.annual"
+                                }
                             }
                         }
                     }
@@ -206,6 +239,14 @@ struct PaywallView: View {
         .navigationViewStyle(.stack) // Prevents iPad split view issues in sheets
         .presentationDetents([.large]) // Ensure full height on iPad
         .presentationDragIndicator(.visible) // Show drag indicator for clarity
+        .task {
+            // Load products when view appears if not already loaded
+            if !subscriptionManager.hasProducts {
+                isLoadingProducts = true
+                await subscriptionManager.loadProducts()
+                isLoadingProducts = false
+            }
+        }
     }
     
     private func purchase() {
@@ -213,14 +254,14 @@ struct PaywallView: View {
 
         Task {
             // Look up the product by selectedProductId
-            var productToPurchase: Product? = selectedProductId == "pro_monthly"
+            var productToPurchase: Product? = selectedProductId == "com.brownsterbits.theequalizer.pro.monthly"
                 ? subscriptionManager.monthlyProduct
                 : subscriptionManager.yearlyProduct
 
             // If product not loaded yet, try loading now
             if productToPurchase == nil {
                 await subscriptionManager.loadProducts()
-                productToPurchase = selectedProductId == "pro_monthly"
+                productToPurchase = selectedProductId == "com.brownsterbits.theequalizer.pro.monthly"
                     ? subscriptionManager.monthlyProduct
                     : subscriptionManager.yearlyProduct
             }
@@ -253,9 +294,13 @@ struct PaywallView: View {
                     showingError = true
                 }
             } else {
-                // Products couldn't be loaded - show error to user
+                // Products couldn't be loaded - show error to user with details
                 isPurchasing = false
-                errorMessage = "Unable to connect to the App Store. Please check your internet connection and try again."
+                if let loadError = subscriptionManager.productLoadError {
+                    errorMessage = "Unable to load subscription options: \(loadError)"
+                } else {
+                    errorMessage = "Unable to connect to the App Store. Please check your internet connection and try again."
+                }
                 showingError = true
             }
         }

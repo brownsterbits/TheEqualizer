@@ -7,7 +7,7 @@ class SubscriptionManager: ObservableObject {
     @Published var subscriptionStatus: SubscriptionStatus = .notSubscribed
     @Published var currentSubscription: String?
 
-    private let productIds = ["pro_monthly", "pro_yearly"]
+    private let productIds = ["com.brownsterbits.theequalizer.pro.monthly", "com.brownsterbits.theequalizer.pro.annual"]
     private var products: [Product] = []
     private var transactionListener: Task<Void, Error>?
 
@@ -42,21 +42,35 @@ class SubscriptionManager: ObservableObject {
     }
     
     // MARK: - Product Loading
-    
+
+    @Published var productLoadError: String?
+
     func loadProducts() async {
         do {
-            products = try await Product.products(for: productIds)
+            let loadedProducts = try await Product.products(for: productIds)
+            await MainActor.run {
+                self.products = loadedProducts
+                self.productLoadError = nil
+            }
+            print("DEBUG: Loaded \(loadedProducts.count) products: \(loadedProducts.map { $0.id })")
         } catch {
-            // Silent failure - products will remain empty
+            print("ERROR: Failed to load products: \(error.localizedDescription)")
+            await MainActor.run {
+                self.productLoadError = error.localizedDescription
+            }
         }
+    }
+
+    var hasProducts: Bool {
+        !products.isEmpty
     }
     
     var monthlyProduct: Product? {
-        products.first { $0.id == "pro_monthly" }
+        products.first { $0.id == "com.brownsterbits.theequalizer.pro.monthly" }
     }
     
     var yearlyProduct: Product? {
-        products.first { $0.id == "pro_yearly" }
+        products.first { $0.id == "com.brownsterbits.theequalizer.pro.annual" }
     }
     
     // MARK: - Purchase
@@ -197,9 +211,9 @@ class SubscriptionManager: ObservableObject {
         guard let productId = currentSubscription else { return "Not Subscribed" }
         
         switch productId {
-        case "pro_monthly":
+        case "com.brownsterbits.theequalizer.pro.monthly":
             return "Pro Monthly"
-        case "pro_yearly":
+        case "com.brownsterbits.theequalizer.pro.annual":
             return "Pro Yearly"
         default:
             return "Pro Subscription"
