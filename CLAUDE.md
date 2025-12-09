@@ -298,13 +298,32 @@ await firebaseService.saveExpense(...)  // Freezes UI on slow network
 
 ## App Store Submission
 
-### Current Status (2025-01-16)
-**Version 1.3 (Build 3)** - ✅ Submitted to App Store, awaiting review
+### Current Status (2025-12-08)
+**Version 1.9 (Build 11)** - In App Review
 
 **Monetization Model**: Free app with in-app subscriptions (freemium)
 - **Free Tier**: 1 event limit, local storage only, all core features
 - **Pro Monthly**: $1.99/month - Unlimited events, cloud sync, sharing
 - **Pro Annual**: $19.99/year - Same as monthly, save 17%
+
+### ⚠️ CRITICAL: IAP Product IDs
+These Product IDs are configured in App Store Connect and **cannot be changed**. Code must match exactly:
+
+| Product | Product ID |
+|---------|------------|
+| Monthly | `com.brownsterbits.theequalizer.pro.monthly` |
+| Annual | `com.brownsterbits.theequalizer.pro.annual` |
+
+**Files containing Product IDs:**
+- `TheEqualizer/Services/SubscriptionManager.swift` - `productIds` array
+- `TheEqualizer/Views/PaywallView.swift` - `selectedProductId` default
+- `TheEqualizer/TheEqualizer.storekit` - Local testing config
+
+### Past Rejection Issues & Fixes (v1.9)
+1. **Guideline 2.1 - "No response upon purchase" on iPad**: Added success overlay animation, pending purchase alert, fixed iPad presentation with `.navigationViewStyle(.stack)`
+2. **Guideline 2.3.2 - IAP metadata identical**: Update Display Name and Description in App Store Connect to be unique
+3. **Guideline 2.3.2 - Promotional image text too small**: Created new 1024x1024 image at `Screenshots/promo_image_v2.png`
+4. **TestFlight purchase error**: Product IDs in code didn't match App Store Connect (was `pro_monthly`/`pro_yearly`, needed full bundle ID format)
 
 **App Store Assets**:
 - Marketing Landing Page: https://brownsterbits.github.io/TheEqualizer/
